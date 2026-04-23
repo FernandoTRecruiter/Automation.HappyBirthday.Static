@@ -145,22 +145,18 @@ colunas: {
 
 > ⚠️ Os títulos devem ser **idênticos** ao que está na planilha, incluindo acentos, espaços e maiúsculas.
 
-#### 5c. Configure o remetente e a assinatura
+#### 5c. Configure o remetente
 
 ```javascript
 remetente: {
-  forcarNome:  'Equipe de Gente & Gestão',  // Nome que aparece no e-mail
-  forcarEmail: '',                           // Deixe '' para usar a conta logada
-  assinatura: `
-    <table style="font-family: Arial, sans-serif; font-size: 13px;">
-      <tr><td>
-        <strong>Seu Nome</strong><br>
-        Seu Cargo | sua@empresa.com.br
-      </td></tr>
-    </table>
-  `,
+  nomeExibicao:      'Equipe de Gente & Gestão', // Nome no campo "De:" — deixe '' para usar o da conta Google
+  incluirAssinatura: true,                        // true = usa a assinatura do Gmail | false = sem assinatura
 },
 ```
+
+> 💡 O e-mail do remetente é sempre o da **conta Google logada** no Apps Script — isso não é configurável por segurança. Só o nome de exibição pode ser alterado.
+>
+> A assinatura, quando ativada, é puxada automaticamente das configurações do Gmail do remetente (Configurações → Ver todas as configurações → Assinatura). Nada precisa ser colado aqui.
 
 #### 5d. Configure a imagem
 
@@ -214,6 +210,8 @@ Se aparecer `✅ E-mail enviado para...` — funcionou! 🎉
 | `ccEmail: 'rh@empresa.com'` | Envia cópia para este e-mail |
 | `enviarFinsDeSemana: false` | Pula envios em sábado e domingo |
 | `textoPersonalizado.ativo: true` | Adiciona um texto acima da imagem |
+| `remetente.nomeExibicao: 'Equipe RH'` | Altera o nome exibido no campo "De:" |
+| `remetente.incluirAssinatura: false` | Envia o e-mail sem assinatura |
 
 ---
 
@@ -258,3 +256,274 @@ MIT — use, modifique e distribua à vontade. Se melhorar, considera abrir um P
 ---
 
 <p align="center">Feito com ☕ e muito amor pela equipe de G&G</p>
+
+# ENGLISH VERSION 
+# 🎂 Birthday Bot — Automated Employee Birthday Emails
+
+> Send personalized birthday emails to your company’s employees automatically using Google Apps Script.
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Google%20Apps%20Script-4285F4?style=for-the-badge&logo=google&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Gmail%20API-EA4335?style=for-the-badge&logo=gmail&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Google%20Drive-34A853?style=for-the-badge&logo=googledrive&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Google%20Sheets-34A853?style=for-the-badge&logo=googlesheets&logoColor=white"/>
+</p>
+
+---
+
+## ✨ What does Birthday Bot do?
+
+Every day, at the time you define, the script will:
+
+1. 📋 Read your employee database (Google Sheets, Smartsheet, or CSV)
+2. 🎂 Identify who has a birthday **today**
+3. ✉️ Send a personalized email with an image and your signature
+4. 📩 Automatically CC HR (or anyone you choose)
+5. ⏭️ Skip terminated employees automatically
+
+---
+
+## 🗂️ Supported Data Sources
+
+| Source | When to use |
+|---|---|
+| **Google Sheets** | Spreadsheet stored in Google Drive *(recommended)* |
+| **Smartsheet** | If your company uses Smartsheet |
+| **CSV (Drive)** | Export from any system (Excel, Power BI, etc.) |
+
+> ⚠️ **Power Query** is an Excel/Power BI feature and does not run in Apps Script. If your data comes from Power Query, export it as a `.csv` file to Google Drive and use the `csv_drive` option.
+
+---
+
+## 📋 Requirements
+
+- Google account (Google Workspace or Gmail)
+- Access to https://script.google.com
+- A birthday image stored in Google Drive
+- Your data source ready (Sheets, Smartsheet, or CSV)
+
+---
+
+## 🚀 Setup Guide
+
+### 1. Create the Apps Script project
+
+1. Go to https://script.google.com  
+2. Click **"New Project"**  
+3. Rename it to `Birthday Bot` (or any name you prefer)  
+4. Delete the default code  
+5. Paste the content of `BirthdayBot.gs` into the editor  
+6. Click 💾 **Save**
+
+---
+
+### 2. Enable Gmail API
+
+1. In the Apps Script editor, click **"Services"** (➕ icon on the left sidebar)  
+2. Find **Gmail API**  
+3. Click **Add**
+
+> Without this, the script cannot send properly formatted emails.
+
+---
+
+### 3. Prepare your employee data
+
+Your dataset must include at least the following columns:
+
+| Name | Birthdate | Corporate Email | Termination Date |
+|---|---|---|---|
+| John Smith | 1990-03-15 | john@company.com | |
+| Mary Souza | 1985-07-22 | mary@company.com | |
+| Pedro Lima | 1992-11-08 | pedro@company.com | 2024-01-10 |
+
+- **Birthdate** formats supported: `YYYY-MM-DD` or `DD/MM/YYYY`  
+- **Termination Date**: if filled, the employee will **not** receive emails  
+- Column names can be customized in Step 5  
+
+---
+
+### 4. Upload your birthday image
+
+1. Go to https://drive.google.com  
+2. Upload your birthday image (PNG or JPG)  
+3. Right-click → **Share** → *Anyone with the link can view*  
+4. Copy the link  
+
+The image ID is the part between `/d/` and `/view`:
+
+```
+https://drive.google.com/file/d/THIS_IS_THE_ID/view
+```
+
+---
+
+### 5. Configure the script
+
+Open `BirthdayBot.gs` and edit the `CONFIG` block:
+
+#### 5a. Choose your data source
+
+```javascript
+fonteDados: 'google_sheets',  // 'google_sheets' | 'smartsheet' | 'csv_drive'
+```
+
+Fill only the selected source:
+
+**Google Sheets**
+```javascript
+googleSheets: {
+  spreadsheetId: 'YOUR_SPREADSHEET_ID',
+  sheetName: 'Sheet1',
+},
+```
+
+**Smartsheet**
+```javascript
+smartsheet: {
+  sheetId:  'YOUR_SHEET_ID',
+  apiToken: 'YOUR_API_TOKEN',
+},
+```
+
+**CSV (Drive)**
+```javascript
+csv: {
+  driveFileId: 'YOUR_CSV_FILE_ID',
+},
+```
+
+---
+
+#### 5b. Configure columns
+
+```javascript
+colunas: {
+  nome:          'Name',
+  dataNascimento:'Birthdate',
+  email:         'Corporate Email',
+  desligamento:  'Termination Date'
+},
+```
+
+> ⚠️ Column names must match **exactly** (including spaces and capitalization).
+
+---
+
+#### 5c. Configure sender
+
+```javascript
+remetente: {
+  nomeExibicao:      'People & Culture Team', // Display name in "From:"
+  incluirAssinatura: true,                    // true = use Gmail signature | false = no signature
+},
+```
+
+> 💡 The sender email is always the **logged-in Google account** used in Apps Script — this cannot be changed for security reasons. Only the display name can be customized.
+>
+> When enabled, the signature is automatically pulled from Gmail settings (Settings → See all settings → Signature).
+
+---
+
+#### 5d. Configure the image
+
+```javascript
+imagemPrincipal: {
+  driveId: 'IMAGE_ID_FROM_STEP_4',
+  altText: 'Happy Birthday!',
+},
+```
+
+---
+
+### 6. Test the script
+
+Before enabling automation:
+
+1. Select function `EnvioManual`  
+2. Click ▶️ **Run**  
+3. Grant permissions (first time only)  
+4. Check logs (`View → Logs`)
+
+If you see `✅ Email sent to...` — it’s working 🎉  
+
+> 💡 Tip: temporarily change a birthdate to today for testing.
+
+---
+
+### 7. Enable daily automation
+
+1. Open **Triggers (⏰ icon)**  
+2. Click **"+ Add Trigger"**  
+3. Configure:
+
+| Field | Value |
+|---|---|
+| Function | `EnvioAutomatico_Acionador` |
+| Deployment | `Head` |
+| Event Source | `Time-driven` |
+| Trigger Type | `Daily` |
+| Time | Choose (recommended: 8–9 AM) |
+
+4. Click **Save** ✅
+
+---
+
+## ⚙️ Additional Settings
+
+| Setting | Description |
+|---|---|
+| `usarNomeCompleto: true` | Use full name instead of first name |
+| `ccEmail: 'hr@company.com'` | Send a copy to this email |
+| `enviarFinsDeSemana: false` | Skip weekends |
+| `textoPersonalizado.ativo: true` | Add custom text above the image |
+| `remetente.nomeExibicao: 'HR Team'` | Change display name in "From:" |
+| `remetente.incluirAssinatura: false` | Send email without signature |
+
+---
+
+## 🔒 Security
+
+- The script runs under your Google account  
+- It only accesses data you provide  
+- Do not share your Smartsheet API token  
+
+For better security, use `PropertiesService`:
+
+```javascript
+// Save once
+PropertiesService.getScriptProperties().setProperty('SMARTSHEET_TOKEN', 'your-token');
+
+// Retrieve
+const token = PropertiesService.getScriptProperties().getProperty('SMARTSHEET_TOKEN');
+```
+
+---
+
+## ❓ Common Issues
+
+**No birthdays found**  
+→ Check column names in `CONFIG.colunas`
+
+**Permission error sending emails**  
+→ Ensure Gmail API is enabled  
+
+**Image not displaying**  
+→ Check sharing settings in Drive  
+
+**Terminated employees still receiving emails**  
+→ Verify termination column mapping  
+
+**Smartsheet error (HTTP 401)**  
+→ Token is invalid or expired  
+
+---
+
+## 📄 License
+
+MIT — feel free to use, modify, and distribute.  
+If you improve it, consider opening a Pull Request 😊
+
+---
+
+<p align="center">Made with ☕ and a lot of love for People & Culture teams 💙</p>
