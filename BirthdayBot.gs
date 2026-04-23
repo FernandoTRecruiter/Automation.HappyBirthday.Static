@@ -1,7 +1,7 @@
 /**
  * ╔══════════════════════════════════════════════════════════════════════════════╗
  * ║           🎂  BIRTHDAY BOT — SISTEMA AUTOMÁTICO DE ANIVERSÁRIOS  🎂         ║
- * ║                          Google Apps Script                                 ║
+ * ║                          Google Apps Script    !                             ║
  * ╚══════════════════════════════════════════════════════════════════════════════╝
  *
  * Envia e-mails personalizados de parabéns automaticamente no aniversário de
@@ -50,9 +50,10 @@
  *      | Profissional | Nascimento | E-mail corporativo | Data de Desligamento |
  *
  *  PASSO 3 — Configure o remetente
- *    → CONFIG.remetente.forcarNome: coloque SEU nome aqui
- *    → CONFIG.remetente.forcarEmail: coloque SEU e-mail aqui (ou deixe '' para usar o da conta logada)
- *    → CONFIG.remetente.assinatura: HTML da sua assinatura de e-mail
+ *    → CONFIG.remetente.nomeExibicao: nome que aparece no campo "De:" do e-mail
+ *      Deixe '' para usar o nome padrão da conta Google logada
+ *    → CONFIG.remetente.incluirAssinatura: true = usa a assinatura do Gmail | false = envia sem assinatura
+ *    → O e-mail do remetente é sempre o da conta Google logada no Apps Script (não é editável)
  *
  *  PASSO 4 — Configure a imagem
  *    → Suba uma imagem ao Google Drive
@@ -153,33 +154,19 @@ const CONFIG = {
 
   // ----------------------------------------------------------------------------
   // 👤 REMETENTE
-  // Por padrão o script usa a conta Google logada no Apps Script.
-  // Aqui você pode forçar um nome de exibição e/ou assinatura personalizados.
+  // O e-mail usado é sempre o da conta Google logada no Apps Script.
+  // Aqui você só precisa definir como seu nome vai aparecer no e-mail.
   // ----------------------------------------------------------------------------
   remetente: {
-    // Nome que aparecerá como remetente no e-mail
-    // Deixe '' para usar o nome configurado na conta Google
-    forcarNome:  'Equipe de Gente & Gestão',
+    // Nome de exibição no campo "De:" do e-mail
+    // Exemplos: 'Equipe de RH', 'Gente & Gestão', 'Fernando Leandro'
+    // Deixe '' para usar o nome padrão configurado na conta Google
+    nomeExibicao: 'Equipe de Gente & Gestão',
 
-    // E-mail remetente — DEVE ser a mesma conta logada no Apps Script
-    // Deixe '' para detectar automaticamente
-    forcarEmail: '',
-
-    // Assinatura HTML — aparece abaixo da imagem de aniversário
-    // Você pode colar o HTML da sua assinatura do Gmail aqui
-    // Deixe '' para usar a assinatura padrão da conta
-    assinatura: `
-      <table style="font-family: Arial, sans-serif; font-size: 13px; color: #333;">
-        <tr>
-          <td>
-            <strong>Seu Nome Completo</strong><br>
-            Analista de Recrutamento & Seleção<br>
-            <span style="color: #888;">📞 (11) 9xxxx-xxxx | ✉️ seuemail@empresa.com.br</span><br>
-            <a href="https://www.linkedin.com/in/seuperfil" style="color: #0077b5;">LinkedIn</a>
-          </td>
-        </tr>
-      </table>
-    `,
+    // Incluir assinatura no e-mail?
+    // true  → usa a assinatura padrão configurada no Gmail do remetente
+    // false → envia sem assinatura
+    incluirAssinatura: true,
   },
 
   // ----------------------------------------------------------------------------
@@ -530,10 +517,10 @@ function _construirEmail(para, assunto, corpoHtml, imagemBlob, remetente) {
 
 function _obterRemetente() {
   try {
-    const userEmail = CONFIG.remetente.forcarEmail || Session.getEffectiveUser().getEmail();
-    let   userName  = CONFIG.remetente.forcarNome;
+    const userEmail = Session.getEffectiveUser().getEmail();
+    let   userName  = CONFIG.remetente.nomeExibicao;
 
-    // Se não forçou um nome, tenta pegar o nome da conta Google
+    // Se não definiu um nome, usa o nome padrão configurado na conta Google
     if (!userName) {
       try {
         const sendAs  = Gmail.Users.Settings.SendAs.list('me');
@@ -554,24 +541,23 @@ function _obterRemetente() {
 }
 
 function _obterAssinatura() {
-  // Prioridade 1: assinatura definida nas configurações acima
-  if (CONFIG.remetente.assinatura && CONFIG.remetente.assinatura.trim()) {
-    return `<div style="margin-top: 30px;">${CONFIG.remetente.assinatura}</div>`;
-  }
+  // Se o toggle estiver desligado, não inclui nada
+  if (!CONFIG.remetente.incluirAssinatura) return '';
 
-  // Prioridade 2: assinatura configurada no Gmail da conta
+  // Busca a assinatura padrão configurada no Gmail do remetente
   try {
     const sendAs  = Gmail.Users.Settings.SendAs.list('me');
     const primary = sendAs?.sendAs?.find(s => s.isPrimary);
     if (primary?.signature) {
       return `<div style="margin-top: 30px;">${primary.signature}</div>`;
     }
-  } catch (e) {}
+  } catch (e) {
+    Logger.log(`⚠️ Não foi possível recuperar a assinatura do Gmail: ${e.message}`);
+  }
 
-  // Fallback
-  return `<div style="margin-top: 30px; font-family: Arial, sans-serif; color: #666;">
-    <p>Atenciosamente,<br>Equipe RH</p>
-  </div>`;
+  // Sem assinatura configurada no Gmail → envia sem assinatura (sem fallback genérico)
+  Logger.log('ℹ️ Nenhuma assinatura encontrada no Gmail — e-mail enviado sem assinatura.');
+  return '';
 }
 
 function _formatarNomeDoEmail(email) {
