@@ -1,8 +1,0 @@
-# Ignore arquivos com credenciais preenchidas
-# NUNCA faça commit do arquivo com tokens ou IDs reais!
-*.local.gs
-config.local.js
-
-# Arquivos do sistema
-.DS_Store
-Thumbs.db
