@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Cartão de aniversário genérico do Birthday Bot (licença MIT, use e edite à vontade).
+     Troque os textos abaixo, exporte em PNG (1200x1200) e suba no seu Drive. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
+  <defs>
+    <radialGradient id="fundo" cx="50%" cy="40%" r="75%">
+      <stop offset="0" stop-color="#2B4C7E"/>
+      <stop offset="1" stop-color="#14243D"/>
+    </radialGradient>
+    <linearGradient id="andarBaixo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF9EC2"/>
+      <stop offset="1" stop-color="#EE6A99"/>
+    </linearGradient>
+    <linearGradient id="andarCima" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFD978"/>
+      <stop offset="1" stop-color="#F5B235"/>
+    </linearGradient>
+    <radialGradient id="brilho">
+      <stop offset="0" stop-color="#FFE7A0" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#FFE7A0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="1200" fill="url(#fundo)"/>
+
+  <!-- bandeirinhas -->
+  <polyline points="0,60 600,120 1200,60" fill="none" stroke="#F4E9D8" stroke-width="3"/>
+  <g>
+    <polygon points="30,66 90,66 60,130" fill="#FF7A59"/>
+    <polygon points="120,75 180,75 150,139" fill="#FFC845"/>
+    <polygon points="210,84 270,84 240,148" fill="#3DD6B0"/>
+    <polygon points="300,93 360,93 330,157" fill="#6EC1FF"/>
+    <polygon points="390,102 450,102 420,166" fill="#FF9EC7"/>
+    <polygon points="480,111 540,111 510,175" fill="#FF7A59"/>
+    <polygon points="660,111 720,111 690,175" fill="#FFC845"/>
+    <polygon points="750,102 810,102 780,166" fill="#3DD6B0"/>
+    <polygon points="840,93 900,93 870,157" fill="#6EC1FF"/>
+    <polygon points="930,84 990,84 960,148" fill="#FF9EC7"/>
+    <polygon points="1020,75 1080,75 1050,139" fill="#FF7A59"/>
+    <polygon points="1110,66 1170,66 1140,130" fill="#FFC845"/>
+  </g>
+
+  <!-- confete -->
+  <g>
+    <rect x="-11" y="-4.5" width="22" height="9" rx="2" fill="#FF7A59" transform="translate(70,240) rotate(25)"/>
+    <rect x="-11" y="-4.5" width="22" height="9" rx="2" fill="#3DD6B0" transform="translate(1120,260) rotate(-30)"/>
+    <rect x="-11" y="-4.5" width="22" height="9" rx="2" fill="#FFC845" transform="translate(120,470) rotate(60)"/>
+    <rect x="-11" y="-4.5" width="22" height="9" rx="2" fill="#FF9EC7" transform="translate(1080,500) rotate(-20)"/>
+    <rect x="-11" y="-4.5" width="22" height="9" rx="2" fill="#6EC1FF" transform="translate(200,640) rotate(15)"/>
+    <rect x="-11" y="-4.5" width="22" height="9" rx="2" fill="#FFC845" transform="translate(1000,660) rotate(-40)"/>
+    <rect x="-11" y="-4.5" width="22" height="9" rx="2" fill="#3DD6B0" transform="translate(90,780) rotate(35)"/>
+    <rect x="-11" y="-4.5" width="22" height="9" rx="2" fill="#FF7A59" transform="translate(1110,800) rotate(20)"/>
+    <rect x="-11" y="-4.5" width="22" height="9" rx="2" fill="#FF9EC7" transform="translate(230,900) rotate(-15)"/>
+    <rect x="-11" y="-4.5" width="22" height="9" rx="2" fill="#6EC1FF" transform="translate(960,920) rotate(45)"/>
+    <rect x="-11" y="-4.5" width="22" height="9" rx="2" fill="#FFC845" transform="translate(60,1040) rotate(-35)"/>
+    <rect x="-11" y="-4.5" width="22" height="9" rx="2" fill="#3DD6B0" transform="translate(1140,1060) rotate(25)"/>
+    <rect x="-11" y="-4.5" width="22" height="9" rx="2" fill="#FF7A59" transform="translate(170,1160) rotate(10)"/>
+    <rect x="-11" y="-4.5" width="22" height="9" rx="2" fill="#FF9EC7" transform="translate(1020,1170) rotate(-20)"/>
+    <circle cx="150" cy="340" r="8" fill="#3DD6B0"/>
+    <circle cx="1050" cy="370" r="8" fill="#FF7A59"/>
+    <circle cx="60" cy="600" r="8" fill="#FF9EC7"/>
+    <circle cx="1150" cy="620" r="8" fill="#6EC1FF"/>
+    <circle cx="260" cy="760" r="8" fill="#FFC845"/>
+    <circle cx="940" cy="780" r="8" fill="#FF7A59"/>
+    <circle cx="130" cy="980" r="8" fill="#6EC1FF"/>
+    <circle cx="1060" cy="990" r="8" fill="#FFC845"/>
+    <circle cx="280" cy="1100" r="8" fill="#3DD6B0"/>
+    <circle cx="900" cy="1120" r="8" fill="#FF9EC7"/>
+    <path d="M250,212 Q250,230 268,230 Q250,230 250,248 Q250,230 232,230 Q250,230 250,212 Z" fill="#FFFFFF" opacity="0.85"/>
+    <path d="M960,201 Q960,215 974,215 Q960,215 960,229 Q960,215 946,215 Q960,215 960,201 Z" fill="#FFFFFF" opacity="0.85"/>
+    <path d="M300,548 Q300,560 312,560 Q300,560 300,572 Q300,560 288,560 Q300,560 300,548 Z" fill="#FFFFFF" opacity="0.8"/>
+    <path d="M900,564 Q900,580 916,580 Q900,580 900,596 Q900,580 884,580 Q900,580 900,564 Z" fill="#FFFFFF" opacity="0.8"/>
+    <path d="M1100,418 Q1100,430 1112,430 Q1100,430 1100,442 Q1100,430 1088,430 Q1100,430 1100,418 Z" fill="#FFFFFF" opacity="0.8"/>
+  </g>
+
+  <!-- textos (troque à vontade) -->
+  <g font-family="'Segoe UI', 'Trebuchet MS', Arial, sans-serif" text-anchor="middle">
+    <text x="600" y="290" font-size="110" font-weight="700" fill="#FFFFFF">Feliz</text>
+    <text x="600" y="420" font-size="136" font-weight="800" fill="#FFC845">aniversário!</text>
+    <text x="600" y="490" font-size="32" fill="#D6E4F5">Que o seu novo ano seja leve e cheio de conquistas.</text>
+    <text x="600" y="1130" font-size="32" fill="#D6E4F5">Com carinho, de toda a equipe</text>
+  </g>
+
+  <!-- bolo -->
+  <ellipse cx="600" cy="1052" rx="320" ry="26" fill="#0B1526" opacity="0.45"/>
+  <ellipse cx="600" cy="1035" rx="330" ry="34" fill="#E9EEF6"/>
+
+  <rect x="330" y="845" width="540" height="185" rx="28" fill="url(#andarBaixo)"/>
+  <rect x="330" y="845" width="540" height="38" rx="19" fill="#FFF6EC"/>
+  <g fill="#FFF6EC">
+    <circle cx="362" cy="883" r="20"/><circle cx="422" cy="883" r="20"/><circle cx="482" cy="883" r="20"/>
+    <circle cx="542" cy="883" r="20"/><circle cx="602" cy="883" r="20"/><circle cx="662" cy="883" r="20"/>
+    <circle cx="722" cy="883" r="20"/><circle cx="782" cy="883" r="20"/><circle cx="838" cy="883" r="20"/>
+  </g>
+  <g fill="#FFF6EC" opacity="0.9">
+    <circle cx="390" cy="960" r="9"/><circle cx="460" cy="960" r="9"/><circle cx="530" cy="960" r="9"/>
+    <circle cx="600" cy="960" r="9"/><circle cx="670" cy="960" r="9"/><circle cx="740" cy="960" r="9"/>
+    <circle cx="810" cy="960" r="9"/>
+  </g>
+
+  <rect x="420" y="705" width="360" height="150" rx="26" fill="url(#andarCima)"/>
+  <rect x="420" y="705" width="360" height="34" rx="17" fill="#FFF6EC"/>
+  <g fill="#FFF6EC">
+    <circle cx="448" cy="739" r="17"/><circle cx="500" cy="739" r="17"/><circle cx="552" cy="739" r="17"/>
+    <circle cx="604" cy="739" r="17"/><circle cx="656" cy="739" r="17"/><circle cx="708" cy="739" r="17"/>
+    <circle cx="756" cy="739" r="17"/>
+  </g>
+  <g fill="#FF7A59" opacity="0.85">
+    <rect x="470" y="790" width="40" height="12" rx="6"/><rect x="545" y="790" width="40" height="12" rx="6"/>
+    <rect x="620" y="790" width="40" height="12" rx="6"/><rect x="695" y="790" width="40" height="12" rx="6"/>
+  </g>
+
+  <!-- velas e chamas -->
+  <g>
+    <circle cx="530" cy="575" r="46" fill="url(#brilho)"/>
+    <circle cx="600" cy="575" r="46" fill="url(#brilho)"/>
+    <circle cx="670" cy="575" r="46" fill="url(#brilho)"/>
+    <rect x="519" y="600" width="22" height="110" rx="6" fill="#6EC1FF"/>
+    <rect x="589" y="600" width="22" height="110" rx="6" fill="#FF9EC7"/>
+    <rect x="659" y="600" width="22" height="110" rx="6" fill="#3DD6B0"/>
+    <g fill="#FFFFFF" opacity="0.55">
+      <rect x="519" y="622" width="22" height="9"/><rect x="519" y="652" width="22" height="9"/><rect x="519" y="682" width="22" height="9"/>
+      <rect x="589" y="622" width="22" height="9"/><rect x="589" y="652" width="22" height="9"/><rect x="589" y="682" width="22" height="9"/>
+      <rect x="659" y="622" width="22" height="9"/><rect x="659" y="652" width="22" height="9"/><rect x="659" y="682" width="22" height="9"/>
+    </g>
+    <path d="M530,548 C548,570 546,592 530,600 C514,592 512,570 530,548 Z" fill="#FFB547"/>
+    <path d="M600,548 C618,570 616,592 600,600 C584,592 582,570 600,548 Z" fill="#FFB547"/>
+    <path d="M670,548 C688,570 686,592 670,600 C654,592 652,570 670,548 Z" fill="#FFB547"/>
+    <path d="M530,566 C539,578 538,590 530,595 C522,590 521,578 530,566 Z" fill="#FFF1B8"/>
+    <path d="M600,566 C609,578 608,590 600,595 C592,590 591,578 600,566 Z" fill="#FFF1B8"/>
+    <path d="M670,566 C679,578 678,590 670,595 C662,590 661,578 670,566 Z" fill="#FFF1B8"/>
+  </g>
+</svg>

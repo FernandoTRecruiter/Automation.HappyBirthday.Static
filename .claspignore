@@ -1,0 +1,4 @@
+# clasp envia para o Apps Script só o robô e o manifesto
+**/**
+!BirthdayBot.gs
+!appsscript.json

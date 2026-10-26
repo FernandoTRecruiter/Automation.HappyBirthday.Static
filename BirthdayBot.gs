@@ -1,182 +1,110 @@
 /**
- * ╔══════════════════════════════════════════════════════════════════════════════╗
- * ║           🎂  BIRTHDAY BOT — SISTEMA AUTOMÁTICO DE ANIVERSÁRIOS  🎂         ║
- * ║                          Google Apps Script    !                             ║
- * ╚══════════════════════════════════════════════════════════════════════════════╝
+ * BIRTHDAY BOT v2.0.0: e-mail de aniversário automático para colaboradores
+ * Google Apps Script | https://github.com/FernandoTRecruiter/Automation.HappyBirthday.Static
+ * Autor: Fernando Paoli (FernandoTRecruiter) | Licença MIT
  *
- * Envia e-mails personalizados de parabéns automaticamente no aniversário de
- * cada colaborador, com imagem, assinatura e cópia para RH.
+ * O QUE FAZ
+ *   Todo dia, no horário escolhido, lê a lista de colaboradores (Google Sheets,
+ *   Smartsheet ou CSV no Drive), acha quem faz aniversário e manda um e-mail com
+ *   uma imagem fixa, com cópia opcional para o RH.
  *
- * ──────────────────────────────────────────────────────────────────────────────
- * 📋 PRÉ-REQUISITOS
- * ──────────────────────────────────────────────────────────────────────────────
- *  1. Conta Google (Google Workspace ou Gmail pessoal)
- *  2. Acesso ao Google Apps Script → https://script.google.com
- *  3. Serviço Gmail API habilitado:
- *       Apps Script → Serviços (+) → Gmail API → adicionar
- *  4. Uma imagem de aniversário salva no Google Drive
- *  5. Dependendo da fonte de dados escolhida (veja abaixo):
- *       • Google Sheets: planilha compartilhada com sua conta
- *       • Smartsheet:    API Token + Sheet ID
- *       • CSV no Drive:  arquivo .csv salvo no Google Drive
+ * INSTALAÇÃO (o passo a passo completo está no README)
+ *   1. Cole ESTE arquivo inteiro no editor do Apps Script e salve.
+ *   2. Serviços (+) > Gmail API > Adicionar (usado só para puxar a sua assinatura).
+ *   3. Preencha o bloco CONFIG logo abaixo. Deixe modoTeste: true por enquanto.
+ *   4. Rode EnvioManual: os e-mails de teste chegam no adminEmail, ninguém mais recebe.
+ *   5. Rode instalarAcionador uma vez. Com o teste aprovado, mude modoTeste para false.
  *
- * ──────────────────────────────────────────────────────────────────────────────
- * 🗂️ FONTES DE DADOS SUPORTADAS — escolha UMA:
- * ──────────────────────────────────────────────────────────────────────────────
- *
- *  ┌─────────────────┬──────────────────────────────────────────────────────┐
- *  │ FONTE           │ O QUE PREENCHER                                      │
- *  ├─────────────────┼──────────────────────────────────────────────────────┤
- *  │ google_sheets   │ googleSheets.spreadsheetId + googleSheets.sheetName  │
- *  │ smartsheet      │ smartsheet.sheetId + smartsheet.apiToken             │
- *  │ csv_drive       │ csv.driveFileId                                      │
- *  └─────────────────┴──────────────────────────────────────────────────────┘
- *
- *  ⚠️  Power Query é uma ferramenta do Excel/Power BI e não roda no Apps Script.
- *      Se seus dados vierem de lá, exporte como CSV para o Drive e use csv_drive.
- *
- * ──────────────────────────────────────────────────────────────────────────────
- * ⚙️ PASSO A PASSO DE CONFIGURAÇÃO
- * ──────────────────────────────────────────────────────────────────────────────
- *
- *  PASSO 1 — Defina a fonte de dados
- *    → Altere CONFIG.fonteDados para: 'google_sheets', 'smartsheet' ou 'csv_drive'
- *    → Preencha apenas o bloco correspondente à sua fonte
- *
- *  PASSO 2 — Configure as colunas
- *    → Em CONFIG.colunas, coloque os títulos EXATOS das colunas da sua planilha
- *      (maiúsculas, acentos e espaços importam!)
- *    Exemplo de planilha mínima necessária:
- *      | Profissional | Nascimento | E-mail corporativo | Data de Desligamento |
- *
- *  PASSO 3 — Configure o remetente
- *    → CONFIG.remetente.nomeExibicao: nome que aparece no campo "De:" do e-mail
- *      Deixe '' para usar o nome padrão da conta Google logada
- *    → CONFIG.remetente.incluirAssinatura: true = usa a assinatura do Gmail | false = envia sem assinatura
- *    → O e-mail do remetente é sempre o da conta Google logada no Apps Script (não é editável)
- *
- *  PASSO 4 — Configure a imagem
- *    → Suba uma imagem ao Google Drive
- *    → Clique com botão direito → "Compartilhar" → "Qualquer pessoa com o link pode ver"
- *    → Copie o ID do link (parte entre /d/ e /view) e cole em CONFIG.imagemPrincipal.driveId
- *
- *  PASSO 5 — Ajuste o e-mail
- *    → Personalize CONFIG.email.titulo e CONFIG.email.textoPersonalizado
- *    → Use {{primeiroNome}} para inserir o nome do aniversariante dinamicamente
- *
- *  PASSO 6 — Crie o Acionador automático
- *    → No Apps Script: Acionadores (ícone de relógio) → + Adicionar acionador
- *    → Função: EnvioAutomatico_Acionador
- *    → Tipo: Acionado por tempo → Temporizador diário → escolha o horário
- *    → Salvar ✅
- *
- *  PASSO 7 — Teste antes de ativar!
- *    → Execute a função EnvioManual para testar sem esperar o acionador
- *    → Verifique os Logs (Ctrl+Enter) para confirmar que funcionou
- *
- * ──────────────────────────────────────────────────────────────────────────────
- * 🔒 SEGURANÇA
- * ──────────────────────────────────────────────────────────────────────────────
- *  • Nunca compartilhe este arquivo com o API Token do Smartsheet preenchido
- *  • Para maior segurança, use PropertiesService (veja comentário no código)
- *  • O script acessa apenas as planilhas e e-mails da sua própria conta Google
- *
- * ──────────────────────────────────────────────────────────────────────────────
- * 📞 SUPORTE & REPOSITÓRIO
- * ──────────────────────────────────────────────────────────────────────────────
- *  GitHub: https://github.com/SEU_USUARIO/birthday-bot
- *  Dúvidas? Abra uma Issue no repositório acima.
- *
- * ══════════════════════════════════════════════════════════════════════════════
+ * FUNÇÕES QUE VOCÊ PODE RODAR (lista de funções no topo do editor)
+ *   EnvioManual             roda agora, com as mesmas regras do envio automático
+ *   instalarAcionador       cria o envio diário no horário de CONFIG.horaDoEnvio
+ *   removerAcionadores      desliga o envio diário
+ *   salvarTokenSmartsheet   guarda o token do Smartsheet fora do código (uso único)
  */
 
 
-// ==============================================================================
-// 🔧 CONFIGURAÇÕES — EDITE APENAS ESTE BLOCO
-// ==============================================================================
+// =============================================================================
+// CONFIGURAÇÕES: EDITE APENAS ESTE BLOCO
+// =============================================================================
 
 const CONFIG = {
 
-  // ----------------------------------------------------------------------------
-  // 🗂️ FONTE DE DADOS
-  // Escolha UMA das opções abaixo e preencha apenas o bloco correspondente:
-  //   'google_sheets' | 'smartsheet' | 'csv_drive'
-  // ----------------------------------------------------------------------------
-  fonteDados: 'google_sheets',   // ← ALTERE AQUI
+  // ---------------------------------------------------------------------------
+  // MODO TESTE (comece SEMPRE com true)
+  //   true  -> nenhum colaborador recebe nada; veja modoTesteDestino
+  //   false -> envio de verdade para os aniversariantes
+  // ---------------------------------------------------------------------------
+  modoTeste: true,
 
-  // ------ Google Sheets -------------------------------------------------------
-  // Encontre o ID na URL da planilha:
-  //   https://docs.google.com/spreadsheets/d/ >>ESTE_TRECHO<< /edit
+  // Só vale com modoTeste: true
+  //   'admin' -> cada e-mail vai para o adminEmail, com o destinatário real no assunto
+  //   'log'   -> nenhum e-mail sai; o script só escreve no registro de execução
+  modoTesteDestino: 'admin',
+
+  // Quem recebe os e-mails do modo teste e o resumo quando alguma coisa falha.
+  // Deixe '' para usar o e-mail da conta Google que roda o script.
+  adminEmail: '',
+
+  // ---------------------------------------------------------------------------
+  // FONTE DE DADOS: 'google_sheets' | 'smartsheet' | 'csv_drive'
+  // Preencha só o bloco da fonte escolhida.
+  // ---------------------------------------------------------------------------
+  fonteDados: 'google_sheets',
+
+  // ID na URL: https://docs.google.com/spreadsheets/d/ >>ID<< /edit
   googleSheets: {
     spreadsheetId: 'COLE_AQUI_O_ID_DA_SUA_PLANILHA',
-    sheetName:     'Planilha1',    // Nome da aba (aparece na aba inferior)
+    sheetName:     'Planilha1',   // nome da aba, como aparece embaixo da planilha
   },
 
-  // ------ Smartsheet ----------------------------------------------------------
-  // sheetId:    URL do Smartsheet → número no final
-  // apiToken:   Smartsheet → Conta → Apps & Integrations → API Access → Generate Token
+  // sheetId: número no fim da URL do Smartsheet.
+  // O TOKEN NÃO VAI AQUI: guarde em Configurações do projeto > Propriedades do
+  // script, com o nome SMARTSHEET_TOKEN (ou rode salvarTokenSmartsheet uma vez).
   smartsheet: {
-    sheetId:   'COLE_AQUI_O_SHEET_ID',
-    apiToken:  'COLE_AQUI_O_API_TOKEN',
+    sheetId:  'COLE_AQUI_O_SHEET_ID',
+    apiToken: '',   // alternativa INSEGURA: quem abrir o código vê o token
   },
 
-  // ------ CSV no Google Drive -------------------------------------------------
-  // driveFileId: abra o arquivo no Drive → ID na URL entre /d/ e /view
-  // Formato esperado do CSV: linha 1 = cabeçalhos, demais linhas = dados
+  // ID na URL do arquivo: https://drive.google.com/file/d/ >>ID<< /view
+  // Linha 1 = cabeçalhos. Aceita separador , ou ; e o CSV salvo pelo Excel.
   csv: {
     driveFileId: 'COLE_AQUI_O_ID_DO_ARQUIVO_CSV',
   },
 
-  // ----------------------------------------------------------------------------
-  // 📊 NOMES DAS COLUNAS
-  // Coloque o título EXATO de cada coluna na sua planilha/fonte de dados
-  // (respeitando maiúsculas, acentos e espaços)
-  // ----------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // NOMES DAS COLUNAS
+  // Maiúscula, acento e espaço sobrando NÃO importam ('E-mail Corporativo '
+  // acha 'e-mail corporativo'). Sem coluna de desligamento? Deixe desligamento: ''.
+  // ---------------------------------------------------------------------------
   colunas: {
-    nome:          'Profissional',           // Nome completo do colaborador
-    dataNascimento:'Nascimento',             // Formato esperado: AAAA-MM-DD ou DD/MM/AAAA
-    email:         'E-mail corporativo',     // E-mail para receber os parabéns
-    desligamento:  'Data de Desligamento',   // Se preenchida, o colaborador é ignorado
+    nome:           'Profissional',
+    dataNascimento: 'Nascimento',            // data da planilha, AAAA-MM-DD, DD/MM/AAAA ou só DD/MM
+    email:          'E-mail corporativo',
+    desligamento:   'Data de Desligamento',  // preenchida = não recebe
   },
 
-  // ----------------------------------------------------------------------------
-  // 👤 NOME NO E-MAIL
-  // false → somente o primeiro nome  (ex: "João")
-  // true  → nome completo            (ex: "João Silva")
-  // ----------------------------------------------------------------------------
+  // false -> só o primeiro nome (Maria) | true -> nome completo (Maria Souza)
   usarNomeCompleto: false,
 
-  // ----------------------------------------------------------------------------
-  // 📧 CÓPIA (CC)
-  // Deixe '' para não copiar ninguém
-  // ----------------------------------------------------------------------------
-  ccEmail: 'rh@suaempresa.com.br',
+  // Cópia para o RH. Vazio = sem cópia. Vários: 'rh@empresa.com, gestor@empresa.com'.
+  // No modo teste a cópia nunca sai.
+  ccEmail: '',
 
-  // ----------------------------------------------------------------------------
-  // 👤 REMETENTE
-  // O e-mail usado é sempre o da conta Google logada no Apps Script.
-  // Aqui você só precisa definir como seu nome vai aparecer no e-mail.
-  // ----------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // REMETENTE: o e-mail que envia é sempre o da conta Google que roda o script
+  // ---------------------------------------------------------------------------
   remetente: {
-    // Nome de exibição no campo "De:" do e-mail
-    // Exemplos: 'Equipe de RH', 'Gente & Gestão', 'Fernando Leandro'
-    // Deixe '' para usar o nome padrão configurado na conta Google
-    nomeExibicao: 'Equipe de Gente & Gestão',
-
-    // Incluir assinatura no e-mail?
-    // true  → usa a assinatura padrão configurada no Gmail do remetente
-    // false → envia sem assinatura
-    incluirAssinatura: true,
+    nomeExibicao:      'Equipe de Gente & Gestão',  // '' = nome da conta Google
+    incluirAssinatura: true,                        // usa a assinatura do Gmail
   },
 
-  // ----------------------------------------------------------------------------
-  // 💌 CONTEÚDO DO E-MAIL
-  // Use {{primeiroNome}} em qualquer lugar para inserir o nome dinamicamente
-  // ----------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // CONTEÚDO DO E-MAIL: {{primeiroNome}} vira o nome do aniversariante
+  // ---------------------------------------------------------------------------
   email: {
-    titulo: 'Feliz Aniversário, {{primeiroNome}}! 🥳',
+    titulo: 'Feliz aniversário, {{primeiroNome}}! 🥳',
 
-    // Bloco de texto acima da imagem — ative se quiser uma mensagem personalizada
+    // Texto opcional acima da imagem (HTML)
     textoPersonalizado: {
       ativo: false,
       conteudo: `
@@ -187,440 +115,909 @@ const CONFIG = {
             Desejamos um ano cheio de sucesso e realizações.
           </p>
         </div>
-      `
+      `,
     },
-
-    // Enviar em sábados e domingos?
-    // true  → envia todos os dias
-    // false → envia apenas em dias úteis (seg–sex)
-    enviarFinsDeSemana: true,
   },
 
-  // ----------------------------------------------------------------------------
-  // 🖼️ IMAGEM PRINCIPAL
-  // driveId: ID do arquivo no Google Drive (veja Passo 4 na documentação acima)
-  // ----------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // CALENDÁRIO
+  // fimDeSemana: o que fazer com aniversário em sábado, domingo ou feriado
+  //   'enviar'          -> manda no próprio dia (padrão)
+  //   'antecipar_sexta' -> manda no último dia útil ANTES (normalmente a sexta)
+  //   'adiar_segunda'   -> manda no primeiro dia útil DEPOIS (normalmente a segunda)
+  // ---------------------------------------------------------------------------
+  fimDeSemana: 'enviar',
+
+  // Feriados contam como fim de semana nas regras acima.
+  // 'AAAA-MM-DD' ou 'DD/MM/AAAA' vale só naquele ano; 'DD/MM' vale todo ano.
+  feriados: [
+    // '01/01', '21/04', '01/05', '07/09', '12/10', '02/11', '15/11', '20/11', '25/12',
+    // '2027-02-08',
+  ],
+
+  // Quem nasceu em 29/02, em ano que não é bissexto: '28fev' ou '01mar'
+  aniversario29Fev: '28fev',
+
+  // Hora do envio diário (0 a 23), usada por instalarAcionador
+  horaDoEnvio: 8,
+
+  // ---------------------------------------------------------------------------
+  // IMAGEM: ID do arquivo no Drive. Não precisa compartilhar: o script anexa a
+  // imagem dentro do e-mail.
+  // ---------------------------------------------------------------------------
   imagemPrincipal: {
     driveId: 'COLE_AQUI_O_ID_DA_IMAGEM_NO_DRIVE',
     altText: 'Imagem de parabéns de aniversário',
   },
-
 };
 
 
-// ==============================================================================
-// 🚀 PONTOS DE ENTRADA — NÃO É NECESSÁRIO EDITAR ABAIXO DESTA LINHA
-// ==============================================================================
+// =============================================================================
+// DAQUI PARA BAIXO NÃO É PRECISO EDITAR
+// =============================================================================
+
+const VERSAO = '2.0.0';
+const FUNCAO_DO_ACIONADOR = 'EnvioAutomatico_Acionador';
+const NOME_ABA_ENVIOS = 'Envios';          // aba de registro quando a fonte é Google Sheets
+const PREFIXO_REGISTRO = 'envio|';         // registro nas Propriedades do script (outras fontes)
+const DIAS_GUARDANDO_REGISTRO = 60;        // registros mais velhos são apagados das Propriedades
+const ID_IMAGEM_NO_EMAIL = 'aniversario';  // nome interno da imagem anexada (cid:aniversario)
+
+
+// =============================================================================
+// FUNÇÕES PARA RODAR
+// =============================================================================
 
 /**
- * ⏰ Chamado automaticamente pelo Acionador diário configurado no Apps Script.
- *    NÃO execute manualmente — use EnvioManual para testes.
+ * Chamada pelo acionador diário (crie com instalarAcionador).
+ * Por que existe separada do EnvioManual: no registro fica claro quem disparou.
  */
 function EnvioAutomatico_Acionador() {
-  Logger.log('⏰ [ACIONADOR] Iniciando envio automático...');
-  _executarEnvio();
+  return _executarEnvio('acionador');
 }
 
 /**
- * 🖱️ Execute manualmente para testar ou forçar um envio pontual.
- *    Respeita todas as mesmas regras do envio automático.
+ * Roda agora, com as mesmas regras do envio automático.
+ * Pode rodar de novo sem medo: quem já recebeu hoje é pulado.
  */
 function EnvioManual() {
-  Logger.log('🖱️ [MANUAL] Iniciando envio manual...');
-  _executarEnvio();
+  return _executarEnvio('manual');
 }
-
-
-// ==============================================================================
-// ⚙️ SISTEMA PRINCIPAL (INTERNO)
-// ==============================================================================
-
-let _variaveis = {};
-
-function _executarEnvio() {
-  if (!_validarConfiguracao()) return;
-
-  const hoje = new Date();
-
-  if (!CONFIG.email.enviarFinsDeSemana && !_ehDiaUtil(hoje)) {
-    Logger.log('🌅 Final de semana — envio desativado nas configurações.');
-    return;
-  }
-
-  Logger.log(`🔍 Buscando aniversariantes de ${hoje.getDate()}/${hoje.getMonth() + 1}...`);
-  Logger.log(`📦 Fonte de dados: ${CONFIG.fonteDados}`);
-
-  const aniversariantes = _buscarAniversariantes(hoje);
-
-  if (aniversariantes.length === 0) {
-    Logger.log('🍃 Nenhum aniversariante hoje.');
-    return;
-  }
-
-  Logger.log(`🎂 ${aniversariantes.length} aniversariante(s) encontrado(s).`);
-  aniversariantes.forEach(pessoa => _enviarEmailParabens(pessoa.email, pessoa.nome));
-}
-
-// ==============================================================================
-// 🗂️ ADAPTADORES DE FONTE DE DADOS
-// ==============================================================================
 
 /**
- * Busca aniversariantes de hoje independente da fonte configurada.
- * Retorna array de { nome, email }
+ * Cria o envio diário no horário de CONFIG.horaDoEnvio.
+ * Por quê: evita o passo a passo de cliques e o acionador duplicado (que
+ * mandava dois e-mails). Apaga os acionadores antigos deste robô antes de criar.
  */
-function _buscarAniversariantes(hoje) {
-  const fonte = CONFIG.fonteDados;
-
-  if (fonte === 'google_sheets') return _buscarDeGoogleSheets(hoje);
-  if (fonte === 'smartsheet')    return _buscarDeSmartsheet(hoje);
-  if (fonte === 'csv_drive')     return _buscarDeCsvDrive(hoje);
-
-  Logger.log(`❌ Fonte de dados inválida: "${fonte}". Use 'google_sheets', 'smartsheet' ou 'csv_drive'.`);
-  return [];
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// 📗 Google Sheets
-// ──────────────────────────────────────────────────────────────────────────────
-function _buscarDeGoogleSheets(hoje) {
-  try {
-    const ss    = SpreadsheetApp.openById(CONFIG.googleSheets.spreadsheetId);
-    const sheet = ss.getSheetByName(CONFIG.googleSheets.sheetName);
-
-    if (!sheet) {
-      Logger.log(`❌ Aba "${CONFIG.googleSheets.sheetName}" não encontrada na planilha.`);
-      return [];
-    }
-
-    const dados = sheet.getDataRange().getValues();
-    return _filtrarAniversariantes(dados, hoje);
-
-  } catch (e) {
-    Logger.log(`❌ Erro ao acessar Google Sheets: ${e.message}`);
-    return [];
+function instalarAcionador() {
+  const hora = Number(CONFIG.horaDoEnvio);
+  if (!(Math.floor(hora) === hora && hora >= 0 && hora <= 23)) {
+    throw new Error('CONFIG.horaDoEnvio precisa ser um número inteiro de 0 a 23.');
   }
+  removerAcionadores();
+  ScriptApp.newTrigger(FUNCAO_DO_ACIONADOR).timeBased().everyDays(1).atHour(hora).create();
+  Logger.log(`Acionador criado: ${FUNCAO_DO_ACIONADOR} todo dia entre ${hora}h e ${hora + 1}h ` +
+             `(fuso do projeto: ${Session.getScriptTimeZone()}).`);
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// 📘 Smartsheet
-// ──────────────────────────────────────────────────────────────────────────────
-function _buscarDeSmartsheet(hoje) {
-  try {
-    const response = UrlFetchApp.fetch(
-      `https://api.smartsheet.com/2.0/sheets/${CONFIG.smartsheet.sheetId}`,
-      {
-        headers: { Authorization: `Bearer ${CONFIG.smartsheet.apiToken}` },
-        muteHttpExceptions: true,
-      }
-    );
-
-    if (response.getResponseCode() !== 200) {
-      Logger.log(`❌ Smartsheet retornou HTTP ${response.getResponseCode()}`);
-      return [];
+/**
+ * Apaga os acionadores deste robô (e só os dele). Devolve quantos apagou.
+ */
+function removerAcionadores() {
+  let apagados = 0;
+  ScriptApp.getProjectTriggers().forEach(function (acionador) {
+    if (acionador.getHandlerFunction() === FUNCAO_DO_ACIONADOR) {
+      ScriptApp.deleteTrigger(acionador);
+      apagados++;
     }
+  });
+  Logger.log(`${apagados} acionador(es) do Birthday Bot removido(s).`);
+  return apagados;
+}
 
-    const data    = JSON.parse(response.getContentText());
-    const colunas = {};
-    data.columns?.forEach(col => { colunas[col.title] = col.id; });
-
-    const idNome         = colunas[CONFIG.colunas.nome];
-    const idData         = colunas[CONFIG.colunas.dataNascimento];
-    const idEmail        = colunas[CONFIG.colunas.email];
-    const idDesligamento = colunas[CONFIG.colunas.desligamento] || null;
-
-    if (!idNome || !idData || !idEmail) {
-      Logger.log('❌ Uma ou mais colunas obrigatórias não foram encontradas no Smartsheet. Verifique CONFIG.colunas.');
-      return [];
-    }
-
-    const diaAtual = hoje.getDate();
-    const mesAtual = hoje.getMonth() + 1;
-    const resultado = [];
-
-    data.rows?.forEach(row => {
-      const getVal = id => row.cells?.find(c => c.columnId === id)?.value || null;
-
-      const nome      = getVal(idNome);
-      const dataStr   = getVal(idData);
-      const email     = getVal(idEmail);
-      const saiu      = idDesligamento ? getVal(idDesligamento) : null;
-
-      if (!nome || !dataStr || !email) return;
-      if (saiu) { Logger.log(`⏭️ ${nome} ignorado — desligado.`); return; }
-
-      const [dia, mes] = _extrairDiaMes(dataStr);
-      if (dia === diaAtual && mes === mesAtual) {
-        resultado.push({ nome: _resolverNome(nome), email });
-      }
-    });
-
-    return resultado;
-
-  } catch (e) {
-    Logger.log(`❌ Erro ao acessar Smartsheet: ${e.message}`);
-    return [];
+/**
+ * USO ÚNICO: guarda o token do Smartsheet nas Propriedades do script.
+ * Por quê: token escrito no código vaza para quem abrir ou copiar o projeto.
+ * Como: cole o token entre as aspas abaixo, rode esta função UMA vez, apague
+ * o token daqui e salve. (Ou crie a propriedade SMARTSHEET_TOKEN direto em
+ * Configurações do projeto > Propriedades do script, sem mexer no código.)
+ */
+function salvarTokenSmartsheet() {
+  const token = '';   // <- cole aqui, rode, e depois APAGUE
+  const valor = String(token || CONFIG.smartsheet.apiToken || '').trim();
+  if (!valor) {
+    throw new Error('Cole o token entre as aspas da linha "const token" desta função e rode de novo.');
   }
+  PropertiesService.getScriptProperties().setProperty('SMARTSHEET_TOKEN', valor);
+  Logger.log(`Token salvo (termina em ...${valor.slice(-4)}). Agora APAGUE o token do código ` +
+             '(e de CONFIG.smartsheet.apiToken) e salve o arquivo.');
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// 📄 CSV no Google Drive
-// ──────────────────────────────────────────────────────────────────────────────
-function _buscarDeCsvDrive(hoje) {
-  try {
-    const file    = DriveApp.getFileById(CONFIG.csv.driveFileId);
-    const conteudo = file.getBlob().getDataAsString('UTF-8');
-    const linhas   = Utilities.parseCsv(conteudo);
 
-    if (linhas.length < 2) {
-      Logger.log('❌ CSV vazio ou sem dados (apenas cabeçalho).');
-      return [];
-    }
+// =============================================================================
+// FLUXO PRINCIPAL
+// =============================================================================
 
-    return _filtrarAniversariantes(linhas, hoje);
+/**
+ * Coração do robô. Passo a passo:
+ *   1. trava: duas execuções ao mesmo tempo não podem mandar em dobro
+ *   2. descobre quais datas de aniversário saem hoje (fim de semana, feriado, 29/02)
+ *   3. lê a fonte e separa os aniversariantes (desligado e e-mail repetido ficam fora)
+ *   4. para cada um: já recebeu? pula. Senão envia (ou simula no modo teste) e registra
+ *   5. escreve o resumo no log e, se algo falhou, manda o resumo para o adminEmail
+ * Devolve o resumo (enviados, pulados, falhas).
+ */
+function _executarEnvio(origem) {
+  const resumo = novoResumo(origem, CONFIG.modoTeste, CONFIG.modoTesteDestino);
 
-  } catch (e) {
-    Logger.log(`❌ Erro ao ler CSV do Drive: ${e.message}`);
-    return [];
+  const trava = LockService.getScriptLock();
+  if (!trava.tryLock(60 * 1000)) {
+    resumo.situacao = 'ocupado';
+    Logger.log('Outra execução do Birthday Bot ainda está rodando. Esta parou sem enviar nada.');
+    return resumo;
   }
+
+  try {
+    _enviarDoDia(resumo);
+    resumo.situacao = resumo.falhas.length ? 'concluída com falhas' : 'concluída';
+  } catch (erro) {
+    resumo.situacao = 'interrompida';
+    resumo.falhas.push({ motivo: erro.message });
+  } finally {
+    trava.releaseLock();
+  }
+
+  Logger.log(textoDoResumo(resumo));
+  if (resumo.falhas.length) _avisarAdmin(resumo);
+  return resumo;
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// 🔄 Filtro comum (Google Sheets e CSV)
-// Espera array 2D onde linha 0 = cabeçalhos, demais = dados
-// ──────────────────────────────────────────────────────────────────────────────
-function _filtrarAniversariantes(dados, hoje) {
-  const cabecalhos = dados[0].map(h => h.toString().trim());
+/** Passos 2 a 4 do fluxo. Lança erro quando não dá para continuar. */
+function _enviarDoDia(resumo) {
+  const problemas = listarProblemasDeConfiguracao(CONFIG);
+  if (problemas.length) throw new Error('Corrija o CONFIG:\n  - ' + problemas.join('\n  - '));
 
-  const idx = {
-    nome:         cabecalhos.indexOf(CONFIG.colunas.nome),
-    data:         cabecalhos.indexOf(CONFIG.colunas.dataNascimento),
-    email:        cabecalhos.indexOf(CONFIG.colunas.email),
-    desligamento: cabecalhos.indexOf(CONFIG.colunas.desligamento),
+  // 2. "Hoje" no fuso do projeto (Configurações do projeto > Fuso horário)
+  const hoje = Utilities.formatDate(_agora(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  resumo.data = hoje;
+
+  const feriados = normalizarFeriados(CONFIG.feriados);
+  feriados.invalidos.forEach(function (f) {
+    resumo.avisos.push(`Feriado ignorado, formato não reconhecido: "${f}"`);
+  });
+
+  const datas = datasDoEnvio(hoje, { fimDeSemana: CONFIG.fimDeSemana, feriados: feriados.datas });
+  resumo.datasCobertas = datas;
+  if (datas.length === 0) {
+    const quando = CONFIG.fimDeSemana === 'antecipar_sexta' ? 'no dia útil anterior' : 'no próximo dia útil';
+    Logger.log(`Hoje (${hoje}) não é dia de envio pela regra fimDeSemana = '${CONFIG.fimDeSemana}': ` +
+               `os aniversários de hoje saem ${quando}.`);
+    return;
+  }
+
+  // 3. Lê a fonte e separa quem faz aniversário nas datas de hoje
+  const fonte = _lerFonte();
+  const sel = selecionarAniversariantes(fonte.linhas, {
+    colunas: CONFIG.colunas,
+    fuso: fonte.fuso,
+    datas: datas,
+    regra29: CONFIG.aniversario29Fev,
+    usarNomeCompleto: CONFIG.usarNomeCompleto,
+    deslocamentoLinha: fonte.deslocamentoLinha,
+  });
+  if (sel.erro) throw new Error(sel.erro);
+
+  resumo.linhasLidas = sel.contagem.linhas;
+  resumo.datasIlegiveis = sel.contagem.dataIlegivel;
+  if (sel.contagem.comData > 0 && sel.contagem.dataIlegivel === sel.contagem.comData) {
+    throw new Error(`Nenhuma das ${sel.contagem.comData} datas de nascimento pôde ser lida. Confira a ` +
+                    `coluna "${CONFIG.colunas.dataNascimento}" (aceita data da planilha, AAAA-MM-DD, ` +
+                    'DD/MM/AAAA ou DD/MM).');
+  }
+
+  // Desligado só aparece no log se hoje fosse o aniversário dele, e mascarado
+  sel.desligados.forEach(function (p) {
+    resumo.pulados.desligado++;
+    Logger.log(`Pulado (desligado): linha ${p.linha}, ${mascararEmail(p.email)}`);
+  });
+  sel.invalidos.forEach(function (p) {
+    resumo.falhas.push({ linha: p.linha, email: mascararEmail(p.email), motivo: p.motivo });
+  });
+
+  const dedup = deduplicarPorEmail(sel.pessoas);
+  dedup.repetidos.forEach(function (p) {
+    resumo.pulados.repetido++;
+    Logger.log(`Pulado (e-mail repetido na fonte): linha ${p.linha}, ${mascararEmail(p.email)}`);
+  });
+
+  if (dedup.unicos.length === 0) {
+    Logger.log(`Nenhum aniversariante para ${datas.join(', ')}.`);
+    return;
+  }
+
+  // 4. O que é igual para todos sai UMA vez: registro, imagem, assinatura, admin
+  const preparo = {
+    registro:   _abrirRegistro(fonte.planilha, hoje, resumo),
+    imagem:     DriveApp.getFileById(CONFIG.imagemPrincipal.driveId).getBlob(),
+    assinatura: _obterAssinatura(resumo),
+    admin:      CONFIG.modoTeste && CONFIG.modoTesteDestino === 'admin' ? _emailDoAdmin() : '',
   };
+  dedup.unicos.forEach(function (pessoa) {
+    _enviarUm(pessoa, preparo, resumo);
+  });
+}
 
-  if (idx.nome === -1 || idx.data === -1 || idx.email === -1) {
-    Logger.log(`❌ Colunas obrigatórias não encontradas. Cabeçalhos encontrados: ${cabecalhos.join(', ')}`);
-    Logger.log(`   Esperado: "${CONFIG.colunas.nome}", "${CONFIG.colunas.dataNascimento}", "${CONFIG.colunas.email}"`);
-    return [];
+/**
+ * Envia (ou simula) o e-mail de UMA pessoa.
+ * Por que MailApp: ele cuida sozinho de acento no nome do remetente e no
+ * assunto, da imagem anexada e da cópia, e só pede permissão para ENVIAR
+ * (o GmailApp pediria acesso a toda a caixa de e-mail).
+ */
+function _enviarUm(pessoa, preparo, resumo) {
+  const quem = `linha ${pessoa.linha}, ${mascararEmail(pessoa.email)}`;
+  const chave = chaveEnvio(pessoa.dataComemorada, pessoa.email);
+
+  if (preparo.registro.jaEnviado(chave)) {
+    resumo.pulados.jaEnviado++;
+    Logger.log(`Pulado (já recebeu o de ${pessoa.dataComemorada}): ${quem}`);
+    return;
   }
 
-  const diaAtual = hoje.getDate();
-  const mesAtual = hoje.getMonth() + 1;
-  const resultado = [];
+  const assunto = substituirVariaveis(CONFIG.email.titulo, { primeiroNome: pessoa.nome }, false);
+  const opcoes = {
+    htmlBody: montarCorpoEmail({
+      nome: pessoa.nome,
+      textoAtivo: CONFIG.email.textoPersonalizado.ativo,
+      texto: CONFIG.email.textoPersonalizado.conteudo,
+      altText: CONFIG.imagemPrincipal.altText,
+      assinaturaHtml: preparo.assinatura,
+    }),
+    inlineImages: {},
+  };
+  opcoes.inlineImages[ID_IMAGEM_NO_EMAIL] = preparo.imagem.copyBlob();
+  if (CONFIG.remetente.nomeExibicao) opcoes.name = CONFIG.remetente.nomeExibicao;
 
-  for (let i = 1; i < dados.length; i++) {
-    const linha = dados[i];
-    const nome    = linha[idx.nome]?.toString().trim();
-    const dataStr = linha[idx.data]?.toString().trim();
-    const email   = linha[idx.email]?.toString().trim();
-    const saiu    = idx.desligamento !== -1 ? linha[idx.desligamento]?.toString().trim() : '';
-
-    if (!nome || !dataStr || !email) continue;
-    if (saiu) { Logger.log(`⏭️ ${nome} ignorado — desligado.`); continue; }
-
-    const [dia, mes] = _extrairDiaMes(dataStr);
-    if (dia === diaAtual && mes === mesAtual) {
-      resultado.push({ nome: _resolverNome(nome), email });
+  try {
+    if (CONFIG.modoTeste && CONFIG.modoTesteDestino === 'log') {
+      resumo.simulados++;
+      Logger.log(`[TESTE] Seria enviado: ${quem} (aniversário de ${pessoa.dataComemorada})`);
+      return;
     }
+    if (CONFIG.modoTeste) {
+      MailApp.sendEmail(preparo.admin, `[TESTE para ${pessoa.email}] ${assunto}`, assunto, opcoes);
+      resumo.enviados++;
+      Logger.log(`[TESTE] Enviado ao admin no lugar de: ${quem}`);
+      return;   // teste não registra: o envio de verdade ainda vai acontecer
+    }
+    if (CONFIG.ccEmail) opcoes.cc = CONFIG.ccEmail;
+    MailApp.sendEmail(pessoa.email, assunto, assunto, opcoes);
+    resumo.enviados++;
+    Logger.log(`Enviado: ${quem}`);
+  } catch (erro) {
+    resumo.falhas.push({ linha: pessoa.linha, email: mascararEmail(pessoa.email), motivo: erro.message });
+    Logger.log(`Falha: ${quem}: ${erro.message}`);
+    return;
   }
-
-  return resultado;
-}
-
-
-// ==============================================================================
-// 📧 ENVIO DE E-MAIL
-// ==============================================================================
-
-function _enviarEmailParabens(email, nomeExibicao) {
-  _variaveis = { primeiroNome: nomeExibicao };
 
   try {
-    const assunto    = _gerarTituloEmailCodificado();
-    const corpoHtml  = _gerarCorpoEmailCompleto();
-    const imagemBlob = DriveApp.getFileById(CONFIG.imagemPrincipal.driveId).getBlob();
-    const remetente  = _obterRemetente();
-
-    const rawEmail = _construirEmail(email, assunto, corpoHtml, imagemBlob, remetente);
-    Gmail.Users.Messages.send({ raw: Utilities.base64EncodeWebSafe(rawEmail) }, 'me');
-
-    Logger.log(`✅ E-mail enviado para ${nomeExibicao} <${email}> por "${remetente.nome}"`);
-  } catch (error) {
-    Logger.log(`❌ Erro ao enviar para ${nomeExibicao}: ${error.message}`);
+    preparo.registro.registrar(chave);
+  } catch (erro) {
+    resumo.falhas.push({ linha: pessoa.linha, email: mascararEmail(pessoa.email),
+                         motivo: 'o e-mail saiu, mas não consegui registrar o envio: ' + erro.message });
   }
 }
 
-function _gerarTituloEmailCodificado() {
-  const texto = _substituirVariaveis(CONFIG.email.titulo);
-  try {
-    const bytes = Utilities.newBlob(texto, 'text/plain', 'UTF-8').getBytes();
-    return `=?UTF-8?B?${Utilities.base64Encode(bytes)}?=`;
-  } catch (e) {
-    return texto;
+/** Separado só para os testes poderem fixar o "hoje". */
+function _agora() {
+  return new Date();
+}
+
+
+// =============================================================================
+// FONTES DE DADOS: todas viram a mesma tabela (linha 0 = cabeçalhos)
+// =============================================================================
+
+/**
+ * Lê a fonte configurada e devolve:
+ *   linhas: tabela (linha 0 = cabeçalhos)
+ *   fuso: fuso da planilha (só Google Sheets; as datas de lá vêm como objeto Date)
+ *   planilha: a planilha aberta (para a aba "Envios"), ou null
+ *   deslocamentoLinha: soma ao índice para dar o número da linha que a pessoa vê
+ */
+function _lerFonte() {
+  if (CONFIG.fonteDados === 'google_sheets') {
+    const planilha = SpreadsheetApp.openById(CONFIG.googleSheets.spreadsheetId);
+    const aba = planilha.getSheetByName(CONFIG.googleSheets.sheetName);
+    if (!aba) throw new Error(`Aba "${CONFIG.googleSheets.sheetName}" não encontrada na planilha.`);
+    return {
+      linhas: aba.getDataRange().getValues(),
+      fuso: planilha.getSpreadsheetTimeZone(),
+      planilha: planilha,
+      deslocamentoLinha: 1,
+    };
   }
-}
 
-function _gerarCorpoEmailCompleto() {
-  let corpo = '';
-
-  if (CONFIG.email.textoPersonalizado.ativo) {
-    corpo += _substituirVariaveis(CONFIG.email.textoPersonalizado.conteudo);
+  if (CONFIG.fonteDados === 'smartsheet') {
+    return { linhas: _lerSmartsheet(), fuso: null, planilha: null, deslocamentoLinha: 0 };
   }
 
-  corpo += `
-    <div style="text-align: center;">
-      <img src="cid:aniversario"
-           alt="${CONFIG.imagemPrincipal.altText}"
-           style="max-width: 400px; height: auto; display: block; margin: 0 auto;">
-    </div>
-  `;
-
-  corpo += _obterAssinatura();
-  return corpo;
+  // csv_drive. O Excel em português salva com ";" e, fora do modo "CSV UTF-8",
+  // em Windows-1252: sem esta conversão os acentos dos nomes viram lixo.
+  const blob = DriveApp.getFileById(CONFIG.csv.driveFileId).getBlob();
+  let texto = blob.getDataAsString('UTF-8');
+  if (texto.indexOf('�') !== -1) texto = blob.getDataAsString('windows-1252');
+  texto = texto.replace(/^﻿/, '');
+  return {
+    linhas: Utilities.parseCsv(texto, detectarSeparadorCsv(texto)),
+    fuso: null,
+    planilha: null,
+    deslocamentoLinha: 1,
+  };
 }
 
-function _construirEmail(para, assunto, corpoHtml, imagemBlob, remetente) {
-  const boundary    = 'bdy_' + Utilities.getUuid().replace(/-/g, '');
-  const corpoBase64 = Utilities.base64Encode(Utilities.newBlob(corpoHtml, 'text/html', 'UTF-8').getBytes());
-  const imageBase64 = Utilities.base64Encode(imagemBlob.getBytes());
+/** Busca a planilha no Smartsheet e converte para tabela. */
+function _lerSmartsheet() {
+  const resposta = UrlFetchApp.fetch(
+    'https://api.smartsheet.com/2.0/sheets/' + encodeURIComponent(CONFIG.smartsheet.sheetId),
+    { headers: { Authorization: 'Bearer ' + _tokenSmartsheet() }, muteHttpExceptions: true }
+  );
+  const codigo = resposta.getResponseCode();
+  if (codigo === 401 || codigo === 403) {
+    throw new Error(`O Smartsheet recusou o token (HTTP ${codigo}). Gere um novo e rode salvarTokenSmartsheet.`);
+  }
+  if (codigo !== 200) {
+    throw new Error(`O Smartsheet respondeu HTTP ${codigo}. Confira CONFIG.smartsheet.sheetId.`);
+  }
+  return smartsheetParaLinhas(JSON.parse(resposta.getContentText()));
+}
 
-  return [
-    `From: "${remetente.nome}" <${remetente.email}>`,
-    `To: ${para}`,
-    CONFIG.ccEmail ? `Cc: ${CONFIG.ccEmail}` : null,
-    `Subject: ${assunto}`,
-    `MIME-Version: 1.0`,
-    `Content-Type: multipart/related; boundary="${boundary}"`,
-    ``,
-    `--${boundary}`,
-    `Content-Type: text/html; charset=utf-8`,
-    `Content-Transfer-Encoding: base64`,
-    ``,
-    corpoBase64,
-    ``,
-    `--${boundary}`,
-    `Content-Type: ${imagemBlob.getContentType()}`,
-    `Content-Transfer-Encoding: base64`,
-    `Content-ID: <aniversario>`,
-    `Content-Disposition: inline`,
-    ``,
-    imageBase64,
-    `--${boundary}--`,
-  ].filter(line => line !== null).join('\r\n');
+/** Token: primeiro das Propriedades do script; o do CONFIG só como alternativa insegura. */
+function _tokenSmartsheet() {
+  const salvo = PropertiesService.getScriptProperties().getProperty('SMARTSHEET_TOKEN');
+  if (salvo) return salvo;
+  if (!ehModelo(CONFIG.smartsheet.apiToken)) {
+    Logger.log('Aviso: token do Smartsheet lido do código (inseguro). Rode salvarTokenSmartsheet.');
+    return String(CONFIG.smartsheet.apiToken).trim();
+  }
+  throw new Error('Token do Smartsheet não encontrado. Rode salvarTokenSmartsheet ou crie a ' +
+                  'propriedade SMARTSHEET_TOKEN em Configurações do projeto > Propriedades do script.');
 }
 
 
-// ==============================================================================
-// 👤 REMETENTE & ASSINATURA
-// ==============================================================================
+// =============================================================================
+// REGISTRO DE ENVIOS (para não mandar duas vezes)
+// =============================================================================
 
-function _obterRemetente() {
-  try {
-    const userEmail = Session.getEffectiveUser().getEmail();
-    let   userName  = CONFIG.remetente.nomeExibicao;
-
-    // Se não definiu um nome, usa o nome padrão configurado na conta Google
-    if (!userName) {
-      try {
-        const sendAs  = Gmail.Users.Settings.SendAs.list('me');
-        const primary = sendAs?.sendAs?.find(s => s.isPrimary);
-        userName = primary?.displayName || _formatarNomeDoEmail(userEmail);
-      } catch (e) {
-        userName = _formatarNomeDoEmail(userEmail);
+/**
+ * Abre o registro de quem já recebeu. Chave = 'AAAA-MM-DD|email', onde a data
+ * é a do aniversário neste ano (não a do envio): mudar a regra de fim de
+ * semana no meio do caminho não faz ninguém receber duas vezes.
+ *   Fonte Google Sheets -> aba "Envios" na própria planilha
+ *   Outras fontes (ou sem permissão de edição) -> Propriedades do script
+ */
+function _abrirRegistro(planilha, hoje, resumo) {
+  if (planilha) {
+    try {
+      let aba = planilha.getSheetByName(NOME_ABA_ENVIOS);
+      if (!aba) {
+        aba = planilha.insertSheet(NOME_ABA_ENVIOS);
+        aba.appendRow(['Chave (aniversário|e-mail)', 'Enviado em']);
       }
+      const total = aba.getLastRow();
+      const chaves = {};
+      if (total > 1) {
+        aba.getRange(2, 1, total - 1, 1).getValues().forEach(function (l) { chaves[String(l[0])] = true; });
+      }
+      return {
+        jaEnviado: function (chave) { return chaves[chave] === true; },
+        registrar: function (chave) { aba.appendRow([chave, new Date()]); chaves[chave] = true; },
+      };
+    } catch (erro) {
+      resumo.avisos.push(`Não consegui usar a aba "${NOME_ABA_ENVIOS}" (${erro.message}). ` +
+                         'Registro feito nas Propriedades do script.');
     }
-
-    Logger.log(`👤 Remetente: "${userName}" <${userEmail}>`);
-    return { nome: userName, email: userEmail };
-
-  } catch (e) {
-    Logger.log(`⚠️ Erro ao detectar remetente: ${e.message}`);
-    return { nome: 'Equipe RH', email: 'noreply@empresa.com' };
   }
+
+  const props = PropertiesService.getScriptProperties();
+  const limite = somarDias(hoje, -DIAS_GUARDANDO_REGISTRO);
+  props.getKeys().forEach(function (k) {
+    if (k.indexOf(PREFIXO_REGISTRO) === 0 && k.substr(PREFIXO_REGISTRO.length, 10) < limite) {
+      props.deleteProperty(k);
+    }
+  });
+  return {
+    jaEnviado: function (chave) { return props.getProperty(PREFIXO_REGISTRO + chave) !== null; },
+    registrar: function (chave) { props.setProperty(PREFIXO_REGISTRO + chave, new Date().toISOString()); },
+  };
 }
 
-function _obterAssinatura() {
-  // Se o toggle estiver desligado, não inclui nada
+
+// =============================================================================
+// ASSINATURA, ADMIN E AVISO DE FALHA
+// =============================================================================
+
+/**
+ * Assinatura padrão do Gmail da conta (serviço avançado Gmail, só leitura das
+ * configurações). Sem o serviço ou sem assinatura: segue sem, com aviso.
+ */
+function _obterAssinatura(resumo) {
   if (!CONFIG.remetente.incluirAssinatura) return '';
-
-  // Busca a assinatura padrão configurada no Gmail do remetente
-  try {
-    const sendAs  = Gmail.Users.Settings.SendAs.list('me');
-    const primary = sendAs?.sendAs?.find(s => s.isPrimary);
-    if (primary?.signature) {
-      return `<div style="margin-top: 30px;">${primary.signature}</div>`;
-    }
-  } catch (e) {
-    Logger.log(`⚠️ Não foi possível recuperar a assinatura do Gmail: ${e.message}`);
+  if (typeof Gmail === 'undefined') {
+    resumo.avisos.push('Serviço Gmail não adicionado (Serviços > Gmail API): e-mail vai sem assinatura.');
+    return '';
   }
-
-  // Sem assinatura configurada no Gmail → envia sem assinatura (sem fallback genérico)
-  Logger.log('ℹ️ Nenhuma assinatura encontrada no Gmail — e-mail enviado sem assinatura.');
+  try {
+    const lista = Gmail.Users.Settings.SendAs.list('me');
+    const principal = ((lista && lista.sendAs) || []).filter(function (s) { return s.isPrimary; })[0];
+    if (principal && principal.signature) return principal.signature;
+    resumo.avisos.push('A conta não tem assinatura no Gmail: e-mail vai sem assinatura.');
+  } catch (erro) {
+    resumo.avisos.push('Não consegui ler a assinatura do Gmail: ' + erro.message);
+  }
   return '';
 }
 
-function _formatarNomeDoEmail(email) {
-  return email.split('@')[0]
-    .split('.')
-    .map(p => p.charAt(0).toUpperCase() + p.slice(1))
-    .join(' ');
+/**
+ * E-mail de quem cuida do robô: CONFIG.adminEmail ou a própria conta.
+ * Sem nenhum dos dois, para com mensagem clara (nada de remetente inventado).
+ */
+function _emailDoAdmin() {
+  if (CONFIG.adminEmail) return String(CONFIG.adminEmail).trim();
+  let email = '';
+  try {
+    email = Session.getEffectiveUser().getEmail();
+  } catch (erro) {
+    // segue para a mensagem abaixo
+  }
+  if (!email) throw new Error('Não consegui descobrir o e-mail desta conta. Preencha CONFIG.adminEmail.');
+  return email;
+}
+
+/** Manda o resumo para o admin. Só é chamada quando houve falha. */
+function _avisarAdmin(resumo) {
+  try {
+    MailApp.sendEmail(_emailDoAdmin(),
+      `[Birthday Bot] ${resumo.falhas.length} falha(s) em ${resumo.data || 'execução'}`,
+      textoDoResumo(resumo));
+  } catch (erro) {
+    Logger.log('Não consegui mandar o resumo de falhas para o admin: ' + erro.message);
+  }
 }
 
 
-// ==============================================================================
-// 🛠️ UTILITÁRIOS
-// ==============================================================================
+// =============================================================================
+// REGRAS PURAS: recebem tudo por parâmetro, não leem CONFIG nem chamam serviço
+// do Google (exceto Utilities.formatDate). Por isso dá para testar fora do
+// Apps Script (pasta tests/ do repositório).
+// =============================================================================
 
-function _validarConfiguracao() {
-  const fontes = ['google_sheets', 'smartsheet', 'csv_drive'];
-  if (!fontes.includes(CONFIG.fonteDados)) {
-    Logger.log(`❌ CONFIG.fonteDados inválido: "${CONFIG.fonteDados}". Use: ${fontes.join(', ')}`);
-    return false;
-  }
-  if (!CONFIG.imagemPrincipal.driveId || CONFIG.imagemPrincipal.driveId.startsWith('COLE_AQUI')) {
-    Logger.log('❌ CONFIG.imagemPrincipal.driveId não foi preenchido.');
-    return false;
-  }
-  return true;
+// ----- datas -----------------------------------------------------------------
+
+/** É um objeto Date? (funciona mesmo com Date criado em outro contexto) */
+function ehData(valor) {
+  return Object.prototype.toString.call(valor) === '[object Date]';
+}
+
+function ehBissexto(ano) {
+  return (ano % 4 === 0 && ano % 100 !== 0) || ano % 400 === 0;
+}
+
+/** Monta 'AAAA-MM-DD'. */
+function dataISO(ano, mes, dia) {
+  return ano + '-' + (mes < 10 ? '0' : '') + mes + '-' + (dia < 10 ? '0' : '') + dia;
+}
+
+function _partesISO(iso) {
+  const p = String(iso).split('-');
+  return { ano: Number(p[0]), mes: Number(p[1]), dia: Number(p[2]) };
+}
+
+/** Soma dias a uma data 'AAAA-MM-DD' (conta em UTC: horário de verão não atrapalha). */
+function somarDias(iso, dias) {
+  const p = _partesISO(iso);
+  const d = new Date(Date.UTC(p.ano, p.mes - 1, p.dia + dias));
+  return dataISO(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+}
+
+function ehFimDeSemana(iso) {
+  const p = _partesISO(iso);
+  const diaDaSemana = new Date(Date.UTC(p.ano, p.mes - 1, p.dia)).getUTCDay();
+  return diaDaSemana === 0 || diaDaSemana === 6;
 }
 
 /**
- * Extrai dia e mês de uma string de data.
- * Suporta: AAAA-MM-DD (ISO), DD/MM/AAAA, DD-MM-AAAA e objetos Date.
+ * Lê uma data escrita como texto. Aceita AAAA-MM-DD, DD/MM/AAAA, DD-MM-AAAA,
+ * DD.MM.AAAA, ano com 2 dígitos e também só DD/MM (sem ano).
+ * Devolve { ano, mes, dia } (ano = null quando não veio) ou null se não for data.
  */
-function _extrairDiaMes(dataStr) {
-  if (!dataStr) return [0, 0];
-
-  // Objeto Date (Google Sheets pode retornar objetos Date)
-  if (dataStr instanceof Date) {
-    return [dataStr.getDate(), dataStr.getMonth() + 1];
+function lerDataTexto(texto) {
+  const s = String(texto === null || texto === undefined ? '' : texto).trim();
+  let ano = null;
+  let mes;
+  let dia;
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:$|[T\s])/);
+  if (m) {
+    ano = Number(m[1]); mes = Number(m[2]); dia = Number(m[3]);
+  } else {
+    m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-](\d{4}|\d{2}))?(?:$|\s)/);
+    if (!m) return null;
+    dia = Number(m[1]); mes = Number(m[2]); ano = m[3] ? Number(m[3]) : null;
   }
-
-  const str = dataStr.toString().trim();
-
-  // Formato ISO: AAAA-MM-DD
-  const iso = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return [parseInt(iso[3], 10), parseInt(iso[2], 10)];
-
-  // Formato BR: DD/MM/AAAA ou DD-MM-AAAA
-  const br = str.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-  if (br) return [parseInt(br[1], 10), parseInt(br[2], 10)];
-
-  return [0, 0];
+  if (mes < 1 || mes > 12) return null;
+  const maximo = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mes - 1];
+  if (dia < 1 || dia > maximo) return null;
+  if (ano !== null && ano >= 1000 && mes === 2 && dia === 29 && !ehBissexto(ano)) return null;
+  return { ano: ano, mes: mes, dia: dia };
 }
 
-function _resolverNome(nomeCompleto) {
-  if (!nomeCompleto) return '';
-  return CONFIG.usarNomeCompleto ? nomeCompleto : nomeCompleto.split(' ')[0];
+/**
+ * Dia e mês do nascimento, venha a célula como Date (Google Sheets) ou texto.
+ * fuso: fuso da PLANILHA. O Sheets entrega a data como meia-noite no fuso dela;
+ * lida em outro fuso, ela pode cair no dia anterior.
+ * Devolve { dia, mes } ou null.
+ */
+function extrairDiaMes(valor, fuso) {
+  if (vazio(valor)) return null;
+  let texto;
+  if (ehData(valor)) {
+    if (isNaN(valor.getTime())) return null;
+    texto = fuso
+      ? Utilities.formatDate(valor, fuso, 'yyyy-MM-dd')
+      : dataISO(valor.getFullYear(), valor.getMonth() + 1, valor.getDate());
+  } else {
+    texto = String(valor).trim();
+  }
+  const d = lerDataTexto(texto);
+  return d ? { dia: d.dia, mes: d.mes } : null;
 }
 
-function _ehDiaUtil(data) {
-  const dia = data.getDay();
-  return dia !== 0 && dia !== 6;
+/**
+ * Em que data do ano `ano` se comemora quem nasceu em dia/mes.
+ * 29/02 em ano não bissexto: regra29 = '28fev' (padrão) ou '01mar'.
+ */
+function dataComemoradaNoAno(dia, mes, ano, regra29) {
+  if (dia === 29 && mes === 2 && !ehBissexto(ano)) {
+    return regra29 === '01mar' ? dataISO(ano, 3, 1) : dataISO(ano, 2, 28);
+  }
+  return dataISO(ano, mes, dia);
 }
 
-function _substituirVariaveis(texto) {
-  if (!_variaveis || !texto) return texto;
-  return texto.replace(/{{(.*?)}}/g, (match, variavel) => _variaveis[variavel.trim()] || match);
+/**
+ * Converte a lista de feriados do CONFIG.
+ * Devolve { datas: ['AAAA-MM-DD' (só naquele ano) ou 'MM-DD' (todo ano)], invalidos: [...] }
+ */
+function normalizarFeriados(lista) {
+  const r = { datas: [], invalidos: [] };
+  (Array.isArray(lista) ? lista : []).forEach(function (item) {
+    const d = lerDataTexto(item);
+    if (!d || (d.ano !== null && d.ano < 1000)) {
+      r.invalidos.push(String(item));
+      return;
+    }
+    r.datas.push(d.ano !== null ? dataISO(d.ano, d.mes, d.dia) : dataISO(2000, d.mes, d.dia).slice(5));
+  });
+  return r;
+}
+
+function ehFeriado(iso, feriados) {
+  return feriados.indexOf(iso) !== -1 || feriados.indexOf(String(iso).slice(5)) !== -1;
+}
+
+/**
+ * Quais datas de aniversário saem no envio de hoje.
+ *   'enviar'          -> só hoje
+ *   'antecipar_sexta' -> num dia útil: hoje + os dias sem expediente logo DEPOIS
+ *                        (sexta leva sábado e domingo); em dia sem expediente: nada
+ *   'adiar_segunda'   -> num dia útil: hoje + os dias sem expediente logo ANTES
+ *                        (segunda leva sábado e domingo); em dia sem expediente: nada
+ * Sem expediente = sábado, domingo ou feriado. Devolve datas em ordem.
+ */
+function datasDoEnvio(hoje, regras) {
+  const regra = regras.fimDeSemana || 'enviar';
+  const feriados = regras.feriados || [];
+  if (regra === 'enviar') return [hoje];
+  if (regra !== 'antecipar_sexta' && regra !== 'adiar_segunda') {
+    throw new Error(`fimDeSemana inválido: "${regra}"`);
+  }
+  const diaUtil = function (d) { return !ehFimDeSemana(d) && !ehFeriado(d, feriados); };
+  if (!diaUtil(hoje)) return [];
+
+  const passo = regra === 'antecipar_sexta' ? 1 : -1;
+  const datas = [hoje];
+  let d = somarDias(hoje, passo);
+  for (let i = 0; i < 31 && !diaUtil(d); i++) {
+    datas.push(d);
+    d = somarDias(d, passo);
+  }
+  return datas.sort();
+}
+
+
+// ----- texto, colunas e seleção ----------------------------------------------
+
+function vazio(valor) {
+  return valor === null || valor === undefined || String(valor).trim() === '';
+}
+
+/** Texto sem espaço sobrando (inclui quebra de linha no meio do nome). */
+function textoLimpo(valor) {
+  return vazio(valor) ? '' : String(valor).replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Cabeçalho comparável: sem BOM, sem acento, minúsculo, um espaço só.
+ * Por quê: 'E-mail Corporativo ' e 'e-mail corporativo' são a mesma coluna.
+ */
+function normalizarCabecalho(texto) {
+  const semAcento = { á: 'a', à: 'a', â: 'a', ã: 'a', ä: 'a', é: 'e', è: 'e', ê: 'e', ë: 'e',
+                      í: 'i', ì: 'i', î: 'i', ï: 'i', ó: 'o', ò: 'o', ô: 'o', õ: 'o', ö: 'o',
+                      ú: 'u', ù: 'u', û: 'u', ü: 'u', ç: 'c', ñ: 'n' };
+  return String(texto === null || texto === undefined ? '' : texto)
+    .replace(/^﻿/, '')
+    .toLowerCase()
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[áàâãäéèêëíìîïóòôõöúùûüçñ]/g, function (c) { return semAcento[c]; })
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Acha cada coluna do CONFIG no cabeçalho da fonte.
+ * A de desligamento, se configurada, é OBRIGATÓRIA: com o nome errado, os
+ * desligados receberiam e-mail sem ninguém perceber.
+ */
+function localizarColunas(cabecalho, colunas) {
+  const normalizados = (cabecalho || []).map(normalizarCabecalho);
+  const achar = function (nome) { return vazio(nome) ? -1 : normalizados.indexOf(normalizarCabecalho(nome)); };
+  const idx = {
+    nome: achar(colunas.nome),
+    dataNascimento: achar(colunas.dataNascimento),
+    email: achar(colunas.email),
+    desligamento: achar(colunas.desligamento),
+  };
+  const faltando = [];
+  ['nome', 'dataNascimento', 'email', 'desligamento'].forEach(function (k) {
+    if (idx[k] === -1 && !vazio(colunas[k])) faltando.push(colunas[k]);
+  });
+  ['nome', 'dataNascimento', 'email'].forEach(function (k) {
+    if (vazio(colunas[k])) faltando.push(`(colunas.${k} vazio no CONFIG)`);
+  });
+  return { idx: idx, faltando: faltando };
+}
+
+/** Coluna de desligamento preenchida = desligado. Caixa de seleção desmarcada (false) não conta. */
+function estaDesligado(valor) {
+  if (valor === false) return false;
+  return !vazio(valor);
+}
+
+/** Primeiro nome, ou o nome completo sem espaços sobrando. */
+function resolverNome(nomeCompleto, usarNomeCompleto) {
+  const limpo = textoLimpo(nomeCompleto);
+  return usarNomeCompleto ? limpo : limpo.split(' ')[0];
+}
+
+/**
+ * Separa, da tabela inteira, quem faz aniversário nas `datas` de hoje.
+ * op = { colunas, fuso, datas, regra29, usarNomeCompleto, deslocamentoLinha }
+ * Devolve { pessoas, desligados, invalidos, contagem, erro }.
+ * Quem não faz aniversário hoje não aparece em lista nenhuma (nem no log).
+ */
+function selecionarAniversariantes(linhas, op) {
+  const r = { pessoas: [], desligados: [], invalidos: [], contagem: { linhas: 0, comData: 0, dataIlegivel: 0 }, erro: '' };
+  if (!linhas || !linhas.length) {
+    r.erro = 'A fonte de dados veio vazia.';
+    return r;
+  }
+  const col = localizarColunas(linhas[0], op.colunas);
+  if (col.faltando.length) {
+    r.erro = 'Coluna(s) não encontrada(s): "' + col.faltando.join('", "') + '". Cabeçalhos da fonte: "' +
+             linhas[0].map(textoLimpo).join('", "') + '".';
+    if (col.faltando.indexOf(op.colunas.desligamento) !== -1) {
+      r.erro += ' A fonte não tem coluna de desligamento? Use colunas.desligamento: \'\' no CONFIG.';
+    }
+    return r;
+  }
+  const idx = col.idx;
+  const deslocamento = op.deslocamentoLinha === undefined ? 1 : op.deslocamentoLinha;
+
+  for (let i = 1; i < linhas.length; i++) {
+    const linha = linhas[i] || [];
+    const nome = textoLimpo(linha[idx.nome]);
+    const email = textoLimpo(linha[idx.email]);
+    const nascimento = linha[idx.dataNascimento];
+    if (!nome && !email && vazio(nascimento)) continue;   // linha em branco
+    r.contagem.linhas++;
+    if (vazio(nascimento)) continue;
+    r.contagem.comData++;
+
+    // A data é lida ANTES de virar texto: o Date do Sheets não pode passar por toString()
+    const dm = extrairDiaMes(nascimento, op.fuso);
+    if (!dm) {
+      r.contagem.dataIlegivel++;
+      continue;
+    }
+    const comemorada = (op.datas || []).filter(function (d) {
+      return dataComemoradaNoAno(dm.dia, dm.mes, Number(d.slice(0, 4)), op.regra29) === d;
+    })[0];
+    if (!comemorada) continue;
+
+    const pessoa = { linha: i + deslocamento, nome: resolverNome(nome, op.usarNomeCompleto), email: email, dataComemorada: comemorada };
+    if (idx.desligamento !== -1 && estaDesligado(linha[idx.desligamento])) {
+      r.desligados.push(pessoa);
+    } else if (!pessoa.nome) {
+      pessoa.motivo = 'nome vazio';
+      r.invalidos.push(pessoa);
+    } else if (!emailValido(email)) {
+      pessoa.motivo = 'e-mail vazio ou inválido';
+      r.invalidos.push(pessoa);
+    } else {
+      r.pessoas.push(pessoa);
+    }
+  }
+  return r;
+}
+
+/** Mesmo e-mail em duas linhas = um e-mail só (fica a primeira linha). */
+function deduplicarPorEmail(pessoas) {
+  const vistos = {};
+  const r = { unicos: [], repetidos: [] };
+  (pessoas || []).forEach(function (p) {
+    const k = String(p.email || '').trim().toLowerCase();
+    if (vistos[k]) {
+      r.repetidos.push(p);
+    } else {
+      vistos[k] = true;
+      r.unicos.push(p);
+    }
+  });
+  return r;
+}
+
+/** Converte a resposta da API do Smartsheet em tabela (linha 0 = títulos das colunas). */
+function smartsheetParaLinhas(dados) {
+  const colunas = (dados && dados.columns) || [];
+  const linhas = [colunas.map(function (c) { return c.title; })];
+  ((dados && dados.rows) || []).forEach(function (row) {
+    const porId = {};
+    (row.cells || []).forEach(function (c) { porId[c.columnId] = c.value; });
+    linhas.push(colunas.map(function (c) { return porId[c.id] === undefined ? '' : porId[c.id]; }));
+  });
+  return linhas;
+}
+
+/** CSV com mais ";" que "," na primeira linha usa ";" (padrão do Excel em português). */
+function detectarSeparadorCsv(texto) {
+  const primeira = String(texto || '').split(/\r?\n/)[0];
+  const contar = function (c) { return primeira.split(c).length - 1; };
+  return contar(';') > contar(',') ? ';' : ',';
+}
+
+
+// ----- e-mail ------------------------------------------------------------------
+
+function emailValido(email) {
+  return /^[^\s@<>(),;:"\[\]]+@[^\s@<>(),;:"\[\]]+\.[A-Za-z]{2,}$/.test(String(email || '').trim());
+}
+
+/** 'joao.silva@empresa.com' -> 'jo***@empresa.com' (o log não guarda o e-mail inteiro). */
+function mascararEmail(email) {
+  const s = String(email || '').trim();
+  const arroba = s.lastIndexOf('@');
+  if (arroba < 1) return '***';
+  const local = s.slice(0, arroba);
+  return (local.length <= 2 ? local.slice(0, 1) : local.slice(0, 2)) + '***' + s.slice(arroba);
+}
+
+/** Chave do registro de envios: 'AAAA-MM-DD|email-em-minusculas'. */
+function chaveEnvio(dataISOComemorada, email) {
+  return dataISOComemorada + '|' + String(email || '').trim().toLowerCase();
+}
+
+/** Escapa & < > " ' para o nome não quebrar (nem injetar) o HTML do e-mail. */
+function escaparHtml(texto) {
+  return String(texto === null || texto === undefined ? '' : texto)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Troca {{variavel}} pelo valor. escapar = true no HTML, false no assunto. */
+function substituirVariaveis(texto, variaveis, escapar) {
+  if (!texto) return '';
+  return String(texto).replace(/\{\{\s*(\w+)\s*\}\}/g, function (marca, chave) {
+    if (!Object.prototype.hasOwnProperty.call(variaveis, chave)) return marca;
+    return escapar ? escaparHtml(variaveis[chave]) : String(variaveis[chave]);
+  });
+}
+
+/**
+ * Corpo HTML do e-mail: texto opcional + imagem anexada (cid) + assinatura.
+ * p = { nome, textoAtivo, texto, altText, assinaturaHtml }
+ * A assinatura vem do Gmail da própria conta e entra como está.
+ */
+function montarCorpoEmail(p) {
+  let corpo = '';
+  if (p.textoAtivo) corpo += substituirVariaveis(p.texto, { primeiroNome: p.nome }, true);
+  corpo += '<div style="text-align: center;">' +
+           '<img src="cid:' + ID_IMAGEM_NO_EMAIL + '" alt="' + escaparHtml(p.altText) + '"' +
+           ' style="max-width: 400px; width: 100%; height: auto; display: block; margin: 0 auto;">' +
+           '</div>';
+  if (p.assinaturaHtml) corpo += '<div style="margin-top: 30px;">' + p.assinaturaHtml + '</div>';
+  return corpo;
+}
+
+
+// ----- resumo e validação ------------------------------------------------------
+
+function novoResumo(origem, modoTeste, destinoTeste) {
+  return {
+    versao: VERSAO,
+    origem: origem,
+    modo: !modoTeste ? 'real' : (destinoTeste === 'log' ? 'teste, só log' : 'teste, e-mails para o admin'),
+    data: '',
+    datasCobertas: [],
+    linhasLidas: 0,
+    datasIlegiveis: 0,
+    enviados: 0,
+    simulados: 0,
+    pulados: { jaEnviado: 0, desligado: 0, repetido: 0 },
+    falhas: [],
+    avisos: [],
+    situacao: 'em andamento',
+  };
+}
+
+/** Resumo em texto: vai para o log e, quando há falha, para o adminEmail. */
+function textoDoResumo(r) {
+  const l = [];
+  l.push(`Birthday Bot ${r.versao}: resumo de ${r.data || '(data não calculada)'} (${r.origem}, modo ${r.modo})`);
+  l.push(`Situação: ${r.situacao}`);
+  if (r.datasCobertas.length) l.push(`Aniversários cobertos: ${r.datasCobertas.join(', ')}`);
+  l.push(`Linhas lidas: ${r.linhasLidas} (datas que não consegui ler: ${r.datasIlegiveis})`);
+  l.push(`Enviados: ${r.enviados}` + (r.simulados ? ` | Simulados (só log): ${r.simulados}` : ''));
+  l.push(`Pulados: já tinham recebido ${r.pulados.jaEnviado}, desligados ${r.pulados.desligado}, ` +
+         `e-mail repetido ${r.pulados.repetido}`);
+  l.push(`Falhas: ${r.falhas.length}`);
+  r.falhas.forEach(function (f) {
+    l.push('  - ' + (f.linha ? `linha ${f.linha} (${f.email}): ` : '') + f.motivo);
+  });
+  if (r.avisos.length) {
+    l.push('Avisos:');
+    r.avisos.forEach(function (a) { l.push('  - ' + a); });
+  }
+  return l.join('\n');
+}
+
+/** Campo vazio ou ainda com o texto de modelo 'COLE_AQUI...'. */
+function ehModelo(valor) {
+  return vazio(valor) || /^COLE_AQUI/.test(String(valor).trim());
+}
+
+/** Lista o que está errado no CONFIG (vazia = tudo certo). */
+function listarProblemasDeConfiguracao(cfg) {
+  const p = [];
+  const umDe = function (valor, opcoes, nome) {
+    if (opcoes.indexOf(valor) === -1) p.push(`${nome} = "${valor}" não existe. Use: '${opcoes.join("', '")}'.`);
+  };
+  const listaDeEmails = function (texto) {
+    return String(texto).split(',').map(function (e) { return e.trim(); }).filter(Boolean);
+  };
+
+  umDe(cfg.fonteDados, ['google_sheets', 'smartsheet', 'csv_drive'], 'fonteDados');
+  if (cfg.fonteDados === 'google_sheets' && (ehModelo(cfg.googleSheets.spreadsheetId) || ehModelo(cfg.googleSheets.sheetName))) {
+    p.push('Preencha googleSheets.spreadsheetId e googleSheets.sheetName.');
+  }
+  if (cfg.fonteDados === 'smartsheet' && ehModelo(cfg.smartsheet.sheetId)) p.push('Preencha smartsheet.sheetId.');
+  if (cfg.fonteDados === 'csv_drive' && ehModelo(cfg.csv.driveFileId)) p.push('Preencha csv.driveFileId.');
+  if (ehModelo(cfg.imagemPrincipal.driveId)) p.push('Preencha imagemPrincipal.driveId.');
+  umDe(cfg.fimDeSemana, ['enviar', 'antecipar_sexta', 'adiar_segunda'], 'fimDeSemana');
+  umDe(cfg.aniversario29Fev, ['28fev', '01mar'], 'aniversario29Fev');
+  if (cfg.modoTeste) umDe(cfg.modoTesteDestino, ['admin', 'log'], 'modoTesteDestino');
+  if (!Array.isArray(cfg.feriados)) p.push("feriados precisa ser uma lista, ex.: ['25/12', '2027-02-08'].");
+  if (!vazio(cfg.adminEmail) && !emailValido(cfg.adminEmail)) p.push(`adminEmail inválido: "${cfg.adminEmail}".`);
+  if (!vazio(cfg.ccEmail) && !listaDeEmails(cfg.ccEmail).every(emailValido)) p.push(`ccEmail inválido: "${cfg.ccEmail}".`);
+  return p;
 }

@@ -1,529 +1,235 @@
-# 🎂 Birthday Bot — Parabéns Automático para Colaboradores
+# 🎂 Birthday Bot v2: e-mail de aniversário automático para colaboradores
 
-> Envie e-mails personalizados de aniversário para os colaboradores da sua empresa, de forma totalmente automática, usando Google Apps Script.
+![Google Apps Script](https://img.shields.io/badge/Google%20Apps%20Script-V8-4285F4?logo=google&logoColor=white)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-2.0.0-blue)
+![Testes](https://img.shields.io/badge/testes-node%20----test-339933?logo=nodedotjs&logoColor=white)
+![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
+
+Um único arquivo de Google Apps Script que, todo dia, acha quem faz aniversário na sua lista de colaboradores e manda um e-mail com uma imagem fixa. Você cola o arquivo no editor, preenche um bloco de configuração e pronto.
+
+[English version below](#english)
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Google%20Apps%20Script-4285F4?style=for-the-badge&logo=google&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Gmail%20API-EA4335?style=for-the-badge&logo=gmail&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Google%20Drive-34A853?style=for-the-badge&logo=googledrive&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Google%20Sheets-34A853?style=for-the-badge&logo=googlesheets&logoColor=white"/>
+  <img src="docs/img/previa-email.png" width="48%" alt="Prévia do e-mail que o aniversariante recebe">
+  <img src="docs/img/execucao-modo-teste.png" width="48%" alt="Ilustração do registro de uma execução em modo teste">
 </p>
+<p align="center"><sub>À esquerda, o e-mail como o aniversariante vê (montado pela própria função do robô, dados fictícios). À direita, ilustração do registro de uma execução em modo teste: as linhas são a saída real do código rodando no Node com serviços falsos.</sub></p>
 
----
+## O que faz
 
-## ✨ O que o Birthday Bot faz?
+- Lê a lista de colaboradores de **Google Sheets**, **Smartsheet** ou **CSV no Drive**.
+- Acha os aniversariantes do dia, pula desligados e e-mail repetido.
+- Manda o parabéns com imagem, assinatura do Gmail e cópia opcional para o RH.
+- Nunca manda duas vezes para a mesma pessoa no mesmo aniversário, mesmo que rode de novo.
+- Quando algo falha, manda um resumo para quem cuida do robô.
 
-Todos os dias, no horário que você definir, o script:
+## Por que existe
 
-1. 📋 Consulta sua lista de colaboradores (Google Sheets, Smartsheet ou CSV)
-2. 🎂 Identifica quem faz aniversário **hoje**
-3. ✉️ Envia um e-mail personalizado com imagem e sua assinatura
-4. 📩 Copia automaticamente o RH (ou quem você quiser)
-5. ⏭️ Ignora colaboradores desligados automaticamente
+Lembrar de cada aniversário à mão falha justamente nos dias corridos. O robô roda sozinho, no horário escolhido, com a conta Google do próprio RH: sem servidor, sem custo e sem instalar nada.
 
----
+## Como funciona (o fluxo de cada dia)
 
-## 🗂️ Fontes de dados suportadas
+```mermaid
+flowchart TD
+  A["Acionador diário ou EnvioManual"] --> B{"Outra execução rodando?"}
+  B -- sim --> Z["Para sem enviar nada"]
+  B -- não --> C["Lê a fonte: Sheets, Smartsheet ou CSV"]
+  C --> D["Filtra aniversariantes<br>fim de semana, feriado e 29/02<br>sem desligados e sem e-mail repetido"]
+  D --> E{"Já recebeu neste aniversário?"}
+  E -- sim --> P["Pula"]
+  E -- não --> F{"modoTeste?"}
+  F -- sim --> G["Vai para o adminEmail<br>ou só para o log"]
+  F -- não --> H["Envia ao aniversariante<br>com cópia opcional"]
+  H --> I["Registra o envio<br>aba Envios ou Propriedades do script"]
+  G --> J["Resumo: enviados, pulados, falhas"]
+  I --> J
+  P --> J
+  J --> K{"Teve falha?"}
+  K -- sim --> L["Resumo por e-mail para o adminEmail"]
+```
 
-| Fonte | Quando usar |
-|---|---|
-| **Google Sheets** | Planilha no Google Drive *(recomendado)* |
-| **Smartsheet** | Se sua empresa usa Smartsheet |
-| **CSV no Drive** | Exportação de qualquer sistema (Excel, Power BI, etc.) |
+## Início rápido (5 passos)
 
-> ⚠️ **Power Query** é uma ferramenta do Excel/Power BI e não roda no Apps Script. Se seus dados vierem do Power Query, exporte-os como `.csv` para o Drive e use a opção `csv_drive`.
+1. **Cole o arquivo.** Em [script.google.com](https://script.google.com): Novo projeto, apague o código de exemplo, cole o [`BirthdayBot.gs`](BirthdayBot.gs) inteiro e salve. Em Configurações do projeto, confira o fuso horário (ex.: `America/Sao_Paulo`).
+2. **Adicione o serviço Gmail.** Serviços (+) > Gmail API > Adicionar. Ele só serve para puxar a sua assinatura; sem ele o e-mail sai sem assinatura.
+3. **Preencha o bloco `CONFIG`.** Fonte de dados, nomes das colunas, ID da imagem no Drive e `adminEmail`. Deixe `modoTeste: true`.
+4. **Teste.** Rode `EnvioManual` e autorize. Os e-mails de teste chegam no `adminEmail`, com o destinatário real no assunto. Para ver um teste hoje, ponha uma linha sua com a data de hoje.
+5. **Ligue.** Rode `instalarAcionador` uma vez. Com o teste aprovado, mude `modoTeste` para `false` e salve.
 
----
+> [!IMPORTANT]
+> O arquivo vem com `modoTeste: true` **de propósito**: na primeira execução nenhum colaborador recebe nada, tudo vai para o `adminEmail`. Só troque para `false` depois de conferir o e-mail de teste.
 
-## 📋 Pré-requisitos
-
-- Conta Google (Google Workspace ou Gmail)
-- Acesso ao [Google Apps Script](https://script.google.com)
-- Uma imagem de aniversário salva no Google Drive
-- Sua fonte de dados pronta (Sheets, Smartsheet ou CSV)
-
----
-
-## 🚀 Passo a passo de instalação
-
-### 1. Crie o projeto no Apps Script
-
-1. Acesse [script.google.com](https://script.google.com)
-2. Clique em **"Novo projeto"**
-3. Renomeie o projeto para `Birthday Bot` (ou o nome que preferir)
-4. Apague o código de exemplo que aparece
-5. Cole o conteúdo do arquivo [`BirthdayBot.gs`](./BirthdayBot.gs) no editor
-6. Clique em 💾 **Salvar**
-
----
-
-### 2. Habilite o serviço Gmail API
-
-1. No editor do Apps Script, clique em **"Serviços"** (ícone `+` na barra lateral esquerda)
-2. Encontre **Gmail API** na lista
-3. Clique em **Adicionar**
-
-> Sem isso, o script não consegue enviar e-mails com a formatação correta.
-
----
-
-### 3. Prepare sua planilha de colaboradores
-
-Independente da fonte escolhida, você precisa de uma tabela com pelo menos estas colunas:
+## A planilha
 
 | Profissional | Nascimento | E-mail corporativo | Data de Desligamento |
 |---|---|---|---|
-| João Silva | 1990-03-15 | joao@empresa.com | |
-| Maria Souza | 1985-07-22 | maria@empresa.com | |
-| Pedro Lima | 1992-11-08 | pedro@empresa.com | 2024-01-10 |
+| Ana Luiza Prado | 26/02/1991 | ana.prado@exemplo.com | |
+| Bruno Tavares | 1988-02-27 | bruno.tavares@exemplo.com | |
+| Diego Fontes | 1990-02-26 | diego.fontes@exemplo.com | 2026-11-30 |
 
-- **Nascimento**: aceita os formatos `AAAA-MM-DD` (ex: `1990-03-15`) ou `DD/MM/AAAA` (ex: `15/03/1990`)
-- **Data de Desligamento**: se preenchida, o colaborador **não** recebe e-mail
-- Os nomes das colunas podem ser diferentes — você vai configurar isso no Passo 5
+- **Nascimento** aceita a data formatada do Google Sheets, `AAAA-MM-DD`, `DD/MM/AAAA` ou só `DD/MM` (sem o ano).
+- **Data de Desligamento** preenchida = não recebe. A fonte não tem essa coluna? Use `desligamento: ''`.
+- Os títulos são configuráveis; maiúscula, acento e espaço sobrando não importam.
+- Arquivo de exemplo com 8 pessoas fictícias: [`exemplos/colaboradores_exemplo.csv`](exemplos/colaboradores_exemplo.csv) (com `fimDeSemana: 'antecipar_sexta'` e "hoje" = sexta, 26/02/2027, ele cobre aniversário no dia, no fim de semana, 29/02, desligado e e-mail repetido).
+- CSV do Excel em português (separado por `;`, com acento do Windows) é lido direto. Dados no Power Query ou Power BI: exporte para CSV no Drive e use `csv_drive`.
 
----
+## A imagem
 
-### 4. Suba sua imagem de aniversário no Drive
+Suba um PNG ou JPG no Drive e copie o ID da URL (`drive.google.com/file/d/`**ID**`/view`). **Não precisa compartilhar**: o robô anexa a imagem dentro do e-mail. Quer um ponto de partida? Use o cartão genérico [`docs/img/cartao-modelo.png`](docs/img/cartao-modelo.png) (1200x1200, editável em [`docs/cartao-modelo.svg`](docs/cartao-modelo.svg)).
 
-1. Vá para o [Google Drive](https://drive.google.com)
-2. Faça upload da sua imagem de aniversário (PNG ou JPG)
-3. Clique com o botão direito → **"Compartilhar"** → **"Qualquer pessoa com o link pode visualizar"**
-4. Copie o link. O ID da imagem é o trecho entre `/d/` e `/view`:
-   ```
-   https://drive.google.com/file/d/ >>ESTE_É_O_ID<< /view
-   ```
+<p align="center"><img src="docs/img/cartao-modelo.png" width="320" alt="Cartão de aniversário genérico"></p>
 
----
+## Configuração
 
-### 5. Configure o script
+| Campo | Padrão | O que faz |
+|---|---|---|
+| `modoTeste` | `true` | `true`: nenhum colaborador recebe; `false`: envio de verdade |
+| `modoTesteDestino` | `'admin'` | No teste: `'admin'` manda tudo para o `adminEmail`; `'log'` não manda nada |
+| `adminEmail` | `''` | Recebe os testes e o resumo de falhas. Vazio = a conta que roda o script |
+| `fonteDados` | `'google_sheets'` | `'google_sheets'`, `'smartsheet'` ou `'csv_drive'` |
+| `googleSheets` | | `spreadsheetId` (da URL) e `sheetName` (nome da aba) |
+| `smartsheet.sheetId` | | Número da planilha. O token vai nas Propriedades do script (veja abaixo) |
+| `csv.driveFileId` | | ID do CSV no Drive |
+| `colunas` | | Títulos das colunas `nome`, `dataNascimento`, `email` e `desligamento` |
+| `usarNomeCompleto` | `false` | `false`: "Maria"; `true`: "Maria Souza" |
+| `ccEmail` | `''` | Cópia (ex.: `'rh@empresa.com'`). Vários: separe por vírgula |
+| `remetente.nomeExibicao` | `'Equipe de Gente & Gestão'` | Nome no campo "De". Vazio = nome da conta |
+| `remetente.incluirAssinatura` | `true` | Usa a assinatura configurada no Gmail |
+| `email.titulo` | `'Feliz aniversário, {{primeiroNome}}! 🥳'` | Assunto. `{{primeiroNome}}` vira o nome |
+| `email.textoPersonalizado` | `ativo: false` | Texto em HTML acima da imagem |
+| `fimDeSemana` | `'enviar'` | `'enviar'` no próprio dia; `'antecipar_sexta'` no dia útil anterior; `'adiar_segunda'` no dia útil seguinte |
+| `feriados` | `[]` | Contam como fim de semana. `'25/12'` vale todo ano; `'2027-02-08'` só naquele ano |
+| `aniversario29Fev` | `'28fev'` | Quem nasceu em 29/02, em ano não bissexto: `'28fev'` ou `'01mar'` |
+| `horaDoEnvio` | `8` | Hora (0 a 23) do envio diário criado por `instalarAcionador` |
+| `imagemPrincipal` | | `driveId` da imagem e `altText` (texto alternativo) |
 
-Abra o arquivo `BirthdayBot.gs` e edite o bloco `CONFIG`:
+**Funções para rodar** (lista no topo do editor): `EnvioManual` (roda agora, pode repetir sem mandar em dobro), `instalarAcionador` (cria o envio diário e apaga duplicados), `removerAcionadores` (desliga) e `salvarTokenSmartsheet` (uso único).
 
-#### 5a. Escolha a fonte de dados
+**Token do Smartsheet:** em Configurações do projeto > Propriedades do script, crie `SMARTSHEET_TOKEN` com o token. Ou cole o token na função `salvarTokenSmartsheet`, rode uma vez e apague. Escrever em `smartsheet.apiToken` funciona, mas é inseguro: quem abrir o projeto vê o token.
 
-```javascript
-fonteDados: 'google_sheets',  // 'google_sheets' | 'smartsheet' | 'csv_drive'
-```
+**Fuso horário:** o "hoje" segue o fuso do projeto (`timeZone` no [`appsscript.json`](appsscript.json), padrão `America/Sao_Paulo`). As datas do Google Sheets são lidas no fuso da planilha (Arquivo > Configurações), então um fuso diferente entre os dois não muda o dia do aniversário.
 
-Depois preencha **apenas o bloco** da fonte escolhida:
+## Privacidade e LGPD
 
-**Google Sheets:**
-```javascript
-googleSheets: {
-  spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms', // ID da planilha
-  sheetName: 'Planilha1',  // Nome da aba
-},
-```
-> 💡 O ID está na URL da planilha: `docs.google.com/spreadsheets/d/`**ID_AQUI**`/edit`
+- **Data de nascimento é dado pessoal.** Deixe a planilha só com quem precisa (RH) e nunca em "qualquer pessoa com o link".
+- **Guarde só o necessário:** o robô só usa dia e mês. A coluna aceita `DD/MM` sem o ano.
+- **Log enxuto:** e-mail aparece mascarado (`an***@exemplo.com`) com o número da linha. Desligado só aparece no log no dia do aniversário dele.
+- **Registro de envios:** a aba `Envios` (ou as Propriedades do script) guarda e-mail e data do aniversário deste ano. Mesmo cuidado de acesso da planilha. Nas Propriedades, registros com mais de 60 dias são apagados.
+- **Quem não quer receber:** apague a data de nascimento da pessoa na lista.
+- **Desligados:** se a coluna de desligamento configurada não existir na fonte, o robô para e avisa, em vez de mandar para todo mundo.
 
-**Smartsheet:**
-```javascript
-smartsheet: {
-  sheetId:  '5567823049871236',
-  apiToken: 'seu-token-aqui',
-},
-```
-> 💡 Token: Smartsheet → Conta → Apps & Integrations → API Access → Generate New Access Token
+## Problemas comuns
 
-**CSV no Drive:**
-```javascript
-csv: {
-  driveFileId: 'ID_DO_SEU_ARQUIVO_CSV',
-},
-```
-
-#### 5b. Configure as colunas
-
-```javascript
-colunas: {
-  nome:          'Profissional',        // Título exato da coluna de nomes
-  dataNascimento:'Nascimento',          // Título exato da coluna de datas
-  email:         'E-mail corporativo',  // Título exato da coluna de e-mails
-  desligamento:  'Data de Desligamento' // Título exato (pode deixar mesmo se não usar)
-},
-```
-
-> ⚠️ Os títulos devem ser **idênticos** ao que está na planilha, incluindo acentos, espaços e maiúsculas.
-
-#### 5c. Configure o remetente
-
-```javascript
-remetente: {
-  nomeExibicao:      'Equipe de Gente & Gestão', // Nome no campo "De:" — deixe '' para usar o da conta Google
-  incluirAssinatura: true,                        // true = usa a assinatura do Gmail | false = sem assinatura
-},
-```
-
-> 💡 O e-mail do remetente é sempre o da **conta Google logada** no Apps Script — isso não é configurável por segurança. Só o nome de exibição pode ser alterado.
->
-> A assinatura, quando ativada, é puxada automaticamente das configurações do Gmail do remetente (Configurações → Ver todas as configurações → Assinatura). Nada precisa ser colado aqui.
-
-#### 5d. Configure a imagem
-
-```javascript
-imagemPrincipal: {
-  driveId: 'ID_DA_IMAGEM_QUE_VOCE_COPIOU_NO_PASSO_4',
-  altText: 'Feliz Aniversário!',
-},
-```
-
----
-
-### 6. Teste o script
-
-Antes de ativar o envio automático, **sempre teste primeiro**:
-
-1. No editor do Apps Script, selecione a função `EnvioManual` no menu suspenso
-2. Clique em ▶️ **Executar**
-3. Autorize as permissões quando solicitado (é pedido apenas na primeira vez)
-4. Verifique os **Logs** (`Ctrl+Enter` ou menu Ver → Logs)
-
-Se aparecer `✅ E-mail enviado para...` — funcionou! 🎉
-
-> 💡 Para testar sem depender de aniversários reais, edite temporariamente uma data na planilha para hoje.
-
----
-
-### 7. Ative o envio automático diário
-
-1. No editor do Apps Script, clique no ícone de **⏰ Acionadores** (relógio na barra lateral)
-2. Clique em **"+ Adicionar acionador"** (canto inferior direito)
-3. Configure assim:
-
-| Campo | Valor |
+| Sintoma | O que fazer |
 |---|---|
-| Função a executar | `EnvioAutomatico_Acionador` |
-| Implantação | `Principal` |
-| Origem do evento | `Acionado por tempo` |
-| Tipo de acionador | `Temporizador diário` |
-| Horário | Escolha um (sugestão: 8h–9h da manhã) |
+| "Corrija o CONFIG" | A mensagem lista cada campo vazio ou com valor inválido |
+| "Coluna(s) não encontrada(s)" | A mensagem mostra os cabeçalhos lidos. Acento e maiúscula não importam, o texto sim |
+| "Nenhuma das N datas pôde ser lida" | Formato da coluna de nascimento. Aceita data da planilha, `AAAA-MM-DD`, `DD/MM/AAAA` ou `DD/MM` |
+| Ninguém recebeu | Está em `modoTeste`? É sábado ou feriado com `antecipar_sexta`/`adiar_segunda`? O resumo no registro de execução diz |
+| E-mail no dia errado | Confira o fuso do projeto (Configurações do projeto) |
+| Sem assinatura | Adicione o serviço Gmail API e confira a assinatura no Gmail |
+| Smartsheet HTTP 401 | Token vencido ou errado: gere outro e rode `salvarTokenSmartsheet` |
+| "Service invoked too many times for one day: email" | Cota diária de destinatários do Apps Script (cada cópia conta). Veja os [limites do Google](https://developers.google.com/apps-script/guides/services/quotas) |
+| Rodei duas vezes | Sem problema: quem já recebeu é pulado |
 
-4. Clique em **Salvar** ✅
+## Usar com clasp (opcional)
 
----
+Para quem prefere mandar do computador com o [clasp](https://github.com/google/clasp): crie o projeto no navegador, copie o ID em Configurações do projeto, crie um `.clasp.json` com `{"scriptId": "SEU_ID", "rootDir": "."}` e rode `clasp push`. O [`.claspignore`](.claspignore) envia só o `BirthdayBot.gs` e o `appsscript.json` (que já liga o serviço Gmail e pede as permissões mínimas). Se você acrescentar código que precise de outra permissão, inclua o escopo em `oauthScopes`.
 
-## ⚙️ Configurações adicionais
+## Testes (para quem mexe no código)
 
-| Configuração | Descrição |
-|---|---|
-| `usarNomeCompleto: true` | Usa o nome completo no lugar do primeiro nome |
-| `ccEmail: 'rh@empresa.com'` | Envia cópia para este e-mail |
-| `enviarFinsDeSemana: false` | Pula envios em sábado e domingo |
-| `textoPersonalizado.ativo: true` | Adiciona um texto acima da imagem |
-| `remetente.nomeExibicao: 'Equipe RH'` | Altera o nome exibido no campo "De:" |
-| `remetente.incluirAssinatura: false` | Envia o e-mail sem assinatura |
+As regras são funções puras dentro do próprio `BirthdayBot.gs`, testadas no Node 22 ou mais novo, sem dependências:
 
----
-
-## 🔒 Segurança
-
-- O script roda **na sua conta Google** — ele não acessa dados de ninguém além de você
-- Se usar o token do Smartsheet, **não compartilhe o arquivo** com ele preenchido
-- Para maior segurança em ambientes corporativos, considere guardar o token com `PropertiesService`:
-  ```javascript
-  // Salvar (execute uma vez):
-  PropertiesService.getScriptProperties().setProperty('SMARTSHEET_TOKEN', 'seu-token');
-  
-  // Usar no código:
-  const token = PropertiesService.getScriptProperties().getProperty('SMARTSHEET_TOKEN');
-  ```
-
----
-
-## ❓ Problemas comuns
-
-**O script não encontra os aniversariantes**
-→ Verifique se os títulos das colunas em `CONFIG.colunas` são idênticos aos da planilha (incluindo acentos)
-
-**Erro de permissão ao enviar e-mail**
-→ Certifique-se de ter adicionado o serviço **Gmail API** (Passo 2)
-
-**A imagem não aparece no e-mail**
-→ Confirme que o arquivo no Drive está com permissão "Qualquer pessoa com o link pode ver"
-
-**Colaboradores desligados ainda recebem e-mail**
-→ Verifique se o título da coluna em `CONFIG.colunas.desligamento` está correto
-
-**Erro no Smartsheet: HTTP 401**
-→ Seu API Token expirou ou está incorreto. Gere um novo em Smartsheet → Conta → API Access
-
----
-
-## 📄 Licença
-
-MIT — use, modifique e distribua à vontade. Se melhorar, considera abrir um Pull Request! 😊
-
----
-
-<p align="center">Feito com ☕ e muito amor pela equipe de G&G</p>
-
-# ENGLISH VERSION 
-# 🎂 Birthday Bot — Automated Employee Birthday Emails
-
-> Send personalized birthday emails to your company’s employees automatically using Google Apps Script.
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Google%20Apps%20Script-4285F4?style=for-the-badge&logo=google&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Gmail%20API-EA4335?style=for-the-badge&logo=gmail&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Google%20Drive-34A853?style=for-the-badge&logo=googledrive&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Google%20Sheets-34A853?style=for-the-badge&logo=googlesheets&logoColor=white"/>
-</p>
-
----
-
-## ✨ What does Birthday Bot do?
-
-Every day, at the time you define, the script will:
-
-1. 📋 Read your employee database (Google Sheets, Smartsheet, or CSV)
-2. 🎂 Identify who has a birthday **today**
-3. ✉️ Send a personalized email with an image and your signature
-4. 📩 Automatically CC HR (or anyone you choose)
-5. ⏭️ Skip terminated employees automatically
-
----
-
-## 🗂️ Supported Data Sources
-
-| Source | When to use |
-|---|---|
-| **Google Sheets** | Spreadsheet stored in Google Drive *(recommended)* |
-| **Smartsheet** | If your company uses Smartsheet |
-| **CSV (Drive)** | Export from any system (Excel, Power BI, etc.) |
-
-> ⚠️ **Power Query** is an Excel/Power BI feature and does not run in Apps Script. If your data comes from Power Query, export it as a `.csv` file to Google Drive and use the `csv_drive` option.
-
----
-
-## 📋 Requirements
-
-- Google account (Google Workspace or Gmail)
-- Access to https://script.google.com
-- A birthday image stored in Google Drive
-- Your data source ready (Sheets, Smartsheet, or CSV)
-
----
-
-## 🚀 Setup Guide
-
-### 1. Create the Apps Script project
-
-1. Go to https://script.google.com  
-2. Click **"New Project"**  
-3. Rename it to `Birthday Bot` (or any name you prefer)  
-4. Delete the default code  
-5. Paste the content of `BirthdayBot.gs` into the editor  
-6. Click 💾 **Save**
-
----
-
-### 2. Enable Gmail API
-
-1. In the Apps Script editor, click **"Services"** (➕ icon on the left sidebar)  
-2. Find **Gmail API**  
-3. Click **Add**
-
-> Without this, the script cannot send properly formatted emails.
-
----
-
-### 3. Prepare your employee data
-
-Your dataset must include at least the following columns:
-
-| Name | Birthdate | Corporate Email | Termination Date |
-|---|---|---|---|
-| John Smith | 1990-03-15 | john@company.com | |
-| Mary Souza | 1985-07-22 | mary@company.com | |
-| Pedro Lima | 1992-11-08 | pedro@company.com | 2024-01-10 |
-
-- **Birthdate** formats supported: `YYYY-MM-DD` or `DD/MM/YYYY`  
-- **Termination Date**: if filled, the employee will **not** receive emails  
-- Column names can be customized in Step 5  
-
----
-
-### 4. Upload your birthday image
-
-1. Go to https://drive.google.com  
-2. Upload your birthday image (PNG or JPG)  
-3. Right-click → **Share** → *Anyone with the link can view*  
-4. Copy the link  
-
-The image ID is the part between `/d/` and `/view`:
-
-```
-https://drive.google.com/file/d/THIS_IS_THE_ID/view
+```bash
+npm test          # 37 testes: datas, calendário, colunas, e-mail e a execução de ponta a ponta
+npm run previas   # gera de novo docs/previa-email.html e docs/execucao-modo-teste.html
 ```
 
----
+As fotos em `docs/img` saem do Edge ou Chrome sem janela: `msedge --headless=new --hide-scrollbars --window-size=1200,1200 --screenshot=docs/img/previa-email.png docs/previa-email.html`.
 
-### 5. Configure the script
+## O que mudou na v2
 
-Open `BirthdayBot.gs` and edit the `CONFIG` block:
+- **Data do Google Sheets volta a funcionar:** na v1, coluna formatada como data fazia ninguém receber.
+- **29/02, fim de semana e feriado** com regra configurável; antes quem nascia no sábado podia nunca receber.
+- **Nunca em dobro:** registro de envios e trava contra duas execuções ao mesmo tempo.
+- **Modo teste** ligado de fábrica e **resumo de falhas** por e-mail.
+- **`instalarAcionador()`** no lugar do passo a passo de cliques.
+- **Mais seguro:** nome escapado no HTML, token fora do código, log mascarado, sem remetente inventado.
 
-#### 5a. Choose your data source
+Lista completa, com o porquê de cada mudança: [`CHANGELOG.md`](CHANGELOG.md).
 
-```javascript
-fonteDados: 'google_sheets',  // 'google_sheets' | 'smartsheet' | 'csv_drive'
-```
+## Licença
 
-Fill only the selected source:
-
-**Google Sheets**
-```javascript
-googleSheets: {
-  spreadsheetId: 'YOUR_SPREADSHEET_ID',
-  sheetName: 'Sheet1',
-},
-```
-
-**Smartsheet**
-```javascript
-smartsheet: {
-  sheetId:  'YOUR_SHEET_ID',
-  apiToken: 'YOUR_API_TOKEN',
-},
-```
-
-**CSV (Drive)**
-```javascript
-csv: {
-  driveFileId: 'YOUR_CSV_FILE_ID',
-},
-```
+MIT, por **Fernando Paoli ([FernandoTRecruiter](https://github.com/FernandoTRecruiter))**. Use, adapte e, se melhorar, abra um Pull Request. 😊
 
 ---
 
-#### 5b. Configure columns
+<a id="english"></a>
 
-```javascript
-colunas: {
-  nome:          'Name',
-  dataNascimento:'Birthdate',
-  email:         'Corporate Email',
-  desligamento:  'Termination Date'
-},
-```
+# 🎂 Birthday Bot v2: automated employee birthday emails
 
-> ⚠️ Column names must match **exactly** (including spaces and capitalization).
+A single Google Apps Script file that finds today's birthdays in your employee list and sends each person an email with a fixed image. Paste the file into the editor, fill in one configuration block, done. Configuration names are in Portuguese because the main audience is Brazilian HR teams; the table below translates them.
 
----
+## What it does
 
-#### 5c. Configure sender
+- Reads the employee list from **Google Sheets**, **Smartsheet** or a **CSV file in Drive**.
+- Finds today's birthdays, skipping terminated employees and duplicate emails.
+- Sends the greeting with the image, your Gmail signature and an optional CC to HR.
+- Never sends twice for the same birthday, even if it runs again.
+- Emails a failure summary to whoever maintains the bot.
 
-```javascript
-remetente: {
-  nomeExibicao:      'People & Culture Team', // Display name in "From:"
-  incluirAssinatura: true,                    // true = use Gmail signature | false = no signature
-},
-```
+## Why it exists
 
-> 💡 The sender email is always the **logged-in Google account** used in Apps Script — this cannot be changed for security reasons. Only the display name can be customized.
->
-> When enabled, the signature is automatically pulled from Gmail settings (Settings → See all settings → Signature).
+Remembering every birthday by hand fails exactly on busy days. The bot runs by itself, at the hour you choose, under HR's own Google account: no server, no cost, nothing to install.
 
----
+## How it works
 
-#### 5d. Configure the image
+Same flow as the [diagram above](#como-funciona-o-fluxo-de-cada-dia): daily trigger, lock against parallel runs, read the source, filter birthdays (weekend, holiday and Feb 29 rules, no terminated employees, no duplicate emails), skip anyone already greeted for this birthday, send (or reroute in test mode), record the send, then log a summary and email it to the admin if anything failed.
 
-```javascript
-imagemPrincipal: {
-  driveId: 'IMAGE_ID_FROM_STEP_4',
-  altText: 'Happy Birthday!',
-},
-```
+## Quick start (5 steps)
 
----
+1. **Paste the file.** At [script.google.com](https://script.google.com): New project, delete the sample code, paste the whole [`BirthdayBot.gs`](BirthdayBot.gs), save. In Project Settings, check the time zone.
+2. **Add the Gmail service.** Services (+) > Gmail API > Add. It is only used to fetch your signature.
+3. **Fill in `CONFIG`.** Data source, column titles, image Drive ID and `adminEmail`. Keep `modoTeste: true`.
+4. **Test.** Run `EnvioManual` and authorize. Test emails arrive at `adminEmail`, with the real recipient in the subject.
+5. **Turn it on.** Run `instalarAcionador` once. When the test looks right, set `modoTeste` to `false` and save.
 
-### 6. Test the script
+> [!IMPORTANT]
+> The file ships with `modoTeste: true` **on purpose**: on the first run no employee receives anything; everything goes to `adminEmail`.
 
-Before enabling automation:
+## Settings
 
-1. Select function `EnvioManual`  
-2. Click ▶️ **Run**  
-3. Grant permissions (first time only)  
-4. Check logs (`View → Logs`)
+| Setting | Default | Meaning |
+|---|---|---|
+| `modoTeste` | `true` | Test mode: no employee receives anything |
+| `modoTesteDestino` | `'admin'` | In test mode: `'admin'` reroutes every email to `adminEmail`; `'log'` sends nothing |
+| `adminEmail` | `''` | Receives test emails and the failure summary. Empty = the account running the script |
+| `fonteDados` | `'google_sheets'` | Data source: `'google_sheets'`, `'smartsheet'` or `'csv_drive'` |
+| `colunas` | | Column titles for name, birth date, email and termination date (case, accents and extra spaces are ignored) |
+| `usarNomeCompleto` | `false` | First name only, or full name |
+| `ccEmail` | `''` | CC address(es), comma separated |
+| `remetente` | | Sender display name and whether to add the Gmail signature |
+| `email` | | Subject (`{{primeiroNome}}` = first name) and optional HTML text above the image |
+| `fimDeSemana` | `'enviar'` | Birthdays on weekends/holidays: `'enviar'` (same day), `'antecipar_sexta'` (previous business day), `'adiar_segunda'` (next business day) |
+| `feriados` | `[]` | Holidays, treated like weekends. `'25/12'` = every year; `'2027-02-08'` = that date only |
+| `aniversario29Fev` | `'28fev'` | Feb 29 birthdays in non-leap years: `'28fev'` (Feb 28) or `'01mar'` (Mar 1) |
+| `horaDoEnvio` | `8` | Hour (0 to 23) used by `instalarAcionador` |
+| `imagemPrincipal` | | Image Drive ID and alt text. No need to share the file: the image is embedded in the email |
 
-If you see `✅ Email sent to...` — it’s working 🎉  
+Functions to run: `EnvioManual` (run now; safe to repeat), `instalarAcionador` (creates the daily trigger, removing duplicates), `removerAcionadores` (turns it off), `salvarTokenSmartsheet` (one-time: stores the Smartsheet token in Script Properties as `SMARTSHEET_TOKEN`, so it never lives in the code).
 
-> 💡 Tip: temporarily change a birthdate to today for testing.
+## Privacy
 
----
+Birth dates are personal data. Restrict the sheet to HR, never share it with "anyone with the link", and keep only day and month if you can (the column accepts `DD/MM`). The log shows masked emails (`an***@exemplo.com`) and row numbers only; terminated employees only appear on their birthday. The `Envios` sheet (or Script Properties) stores email plus this year's birthday date: protect it like the main sheet.
 
-### 7. Enable daily automation
+## Tests
 
-1. Open **Triggers (⏰ icon)**  
-2. Click **"+ Add Trigger"**  
-3. Configure:
+`npm test` runs 37 tests (Node 22+, no dependencies) against the very same `BirthdayBot.gs`, loaded into a Node `vm` with fake Google services. `npm run previas` regenerates the preview pages in `docs/`.
 
-| Field | Value |
-|---|---|
-| Function | `EnvioAutomatico_Acionador` |
-| Deployment | `Head` |
-| Event Source | `Time-driven` |
-| Trigger Type | `Daily` |
-| Time | Choose (recommended: 8–9 AM) |
+## What changed in v2
 
-4. Click **Save** ✅
+Google Sheets date cells work again (in v1 a date-formatted column meant nobody got an email), configurable weekend, holiday and Feb 29 rules, no duplicate sends, test mode on by default, failure summary by email, one-click trigger setup, escaped HTML, token out of the code, masked logs. Details in [`CHANGELOG.md`](CHANGELOG.md).
 
----
+## License
 
-## ⚙️ Additional Settings
-
-| Setting | Description |
-|---|---|
-| `usarNomeCompleto: true` | Use full name instead of first name |
-| `ccEmail: 'hr@company.com'` | Send a copy to this email |
-| `enviarFinsDeSemana: false` | Skip weekends |
-| `textoPersonalizado.ativo: true` | Add custom text above the image |
-| `remetente.nomeExibicao: 'HR Team'` | Change display name in "From:" |
-| `remetente.incluirAssinatura: false` | Send email without signature |
-
----
-
-## 🔒 Security
-
-- The script runs under your Google account  
-- It only accesses data you provide  
-- Do not share your Smartsheet API token  
-
-For better security, use `PropertiesService`:
-
-```javascript
-// Save once
-PropertiesService.getScriptProperties().setProperty('SMARTSHEET_TOKEN', 'your-token');
-
-// Retrieve
-const token = PropertiesService.getScriptProperties().getProperty('SMARTSHEET_TOKEN');
-```
-
----
-
-## ❓ Common Issues
-
-**No birthdays found**  
-→ Check column names in `CONFIG.colunas`
-
-**Permission error sending emails**  
-→ Ensure Gmail API is enabled  
-
-**Image not displaying**  
-→ Check sharing settings in Drive  
-
-**Terminated employees still receiving emails**  
-→ Verify termination column mapping  
-
-**Smartsheet error (HTTP 401)**  
-→ Token is invalid or expired  
-
----
-
-## 📄 License
-
-MIT — feel free to use, modify, and distribute.  
-If you improve it, consider opening a Pull Request 😊
-
----
-
-<p align="center">Made with ☕ and a lot of love for People & Culture teams 💙</p>
+MIT, by **Fernando Paoli ([FernandoTRecruiter](https://github.com/FernandoTRecruiter))**.

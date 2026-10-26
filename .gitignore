@@ -1,0 +1,3 @@
+node_modules/
+# .clasp.json guarda o ID do SEU projeto Apps Script: não publique
+.clasp.json

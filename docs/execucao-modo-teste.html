@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Execução em modo teste</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; background: #f1f3f4; font-family: "Segoe UI", Arial, sans-serif; color: #202124; }
+  .painel { width: 1080px; margin: 0 auto; background: #fff; border: 1px solid #dadce0; border-radius: 10px; overflow: hidden; }
+  .titulo { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #dadce0; font-size: 16px; font-weight: 600; }
+  .selo { font-size: 12px; font-weight: 600; color: #8a4b00; background: #fff4e0; border: 1px solid #f2c27b; border-radius: 999px; padding: 2px 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td { padding: 7px 20px; border-bottom: 1px solid #f1f3f4; vertical-align: top; }
+  td.nivel { width: 110px; color: #5f6368; white-space: nowrap; }
+  td.msg { font-family: Consolas, "Courier New", monospace; font-size: 13.5px; white-space: pre-wrap; }
+  tr.extremo td.msg { font-family: "Segoe UI", Arial, sans-serif; color: #5f6368; }
+  .legenda { width: 1080px; margin: 14px auto; font-size: 13px; color: #5f6368; }
+</style></head>
+<body>
+  <div class="painel">
+    <div class="titulo">Registro de execução: EnvioManual <span class="selo">ilustração</span></div>
+    <table>
+      <tr class="extremo"><td class="nivel">Notificação</td><td class="msg">Execução iniciada</td></tr>
+      <tr><td class="nivel">Informação</td><td class="msg">Pulado (desligado): linha 5, di***@exemplo.com</td></tr>
+      <tr><td class="nivel">Informação</td><td class="msg">Pulado (e-mail repetido na fonte): linha 7, EL***@exemplo.com</td></tr>
+      <tr><td class="nivel">Informação</td><td class="msg">[TESTE] Enviado ao admin no lugar de: linha 2, an***@exemplo.com</td></tr>
+      <tr><td class="nivel">Informação</td><td class="msg">[TESTE] Enviado ao admin no lugar de: linha 3, br***@exemplo.com</td></tr>
+      <tr><td class="nivel">Informação</td><td class="msg">[TESTE] Enviado ao admin no lugar de: linha 4, ma***@exemplo.com</td></tr>
+      <tr><td class="nivel">Informação</td><td class="msg">[TESTE] Enviado ao admin no lugar de: linha 6, el***@exemplo.com</td></tr>
+      <tr><td class="nivel">Informação</td><td class="msg">[TESTE] Enviado ao admin no lugar de: linha 10, to***@exemplo.com</td></tr>
+      <tr><td class="nivel">Informação</td><td class="msg">Birthday Bot 2.0.0: resumo de 2027-02-26 (manual, modo teste, e-mails para o admin)
+Situação: concluída
+Aniversários cobertos: 2027-02-26, 2027-02-27, 2027-02-28
+Linhas lidas: 9 (datas que não consegui ler: 0)
+Enviados: 5
+Pulados: já tinham recebido 0, desligados 1, e-mail repetido 1
+Falhas: 0</td></tr>
+      <tr class="extremo"><td class="nivel">Notificação</td><td class="msg">Execução concluída</td></tr>
+    </table>
+  </div>
+  <p class="legenda">Ilustração: as linhas são a saída real do BirthdayBot.gs rodando no Node com serviços falsos (npm run previas), em modo teste, com a lista fictícia de exemplos/ e "hoje" = sexta, 26/02/2027. O desenho imita o painel de execuções do Apps Script; não é captura de tela do Google.</p>
+</body></html>

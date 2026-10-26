@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Prévia do e-mail</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; background: #eef1f5; font-family: "Segoe UI", Arial, sans-serif; color: #1f2933; }
+  .janela { width: 860px; margin: 0 auto; background: #fff; border-radius: 14px; box-shadow: 0 6px 24px rgba(20, 36, 61, .12); overflow: hidden; }
+  .topo { padding: 26px 34px 18px; border-bottom: 1px solid #e3e8ef; }
+  .assunto { font-size: 24px; font-weight: 600; margin: 0 0 18px; }
+  .de { display: flex; gap: 14px; align-items: center; }
+  .avatar { width: 44px; height: 44px; border-radius: 50%; background: #2b4c7e; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  .nome { font-weight: 600; }
+  .det { font-size: 14px; color: #52606d; font-weight: 400; }
+  .corpo { padding: 28px 34px 36px; }
+  .legenda { width: 860px; margin: 14px auto; font-size: 13px; color: #52606d; }
+</style></head>
+<body>
+  <div class="janela">
+    <div class="topo">
+      <p class="assunto">Feliz aniversário, Ana! 🥳</p>
+      <div class="de">
+        <div class="avatar">GG</div>
+        <div>
+          <div class="nome">Equipe de Gente &amp; Gestão <span class="det">&lt;gente.gestao@empresa.com&gt;</span></div>
+          <div class="det">para ana.prado@exemplo.com, cc rh@empresa.com</div>
+        </div>
+      </div>
+    </div>
+    <div class="corpo">
+        <div style="text-align: center; font-family: Arial, sans-serif; color: #333; margin-bottom: 20px;">
+          <h2 style="color: #2c3e50;">Parabéns, Ana! 🎉</h2>
+          <p style="font-size: 16px; line-height: 1.6;">
+            Que seu dia seja repleto de alegrias, conquistas e momentos especiais!<br>
+            Desejamos um ano cheio de sucesso e realizações.
+          </p>
+        </div>
+      <div style="text-align: center;"><img src="img/cartao-modelo.png" alt="Cartão de aniversário" style="max-width: 400px; width: 100%; height: auto; display: block; margin: 0 auto;"></div><div style="margin-top: 30px;"><div style="font-family: Arial, sans-serif; font-size: 13px; color: #555; line-height: 1.5;"><strong style="color: #2c3e50;">Equipe de Gente &amp; Gestão</strong><br>Empresa Exemplo</div></div></div>
+  </div>
+  <p class="legenda">Corpo montado pela função montarCorpoEmail do BirthdayBot.gs (scripts/gerar-previas.js), com textoPersonalizado ativo. Pessoa e endereços fictícios.</p>
+</body></html>

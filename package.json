@@ -1,0 +1,11 @@
+{
+  "name": "automation-happybirthday-static",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Birthday Bot: e-mail de aniversário automático em Google Apps Script",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\"",
+    "previas": "node scripts/gerar-previas.js"
+  }
+}
